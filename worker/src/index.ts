@@ -57,7 +57,7 @@ app.onError((error, c) => {
 
 app.use("/api/*", async (c, next) => {
   c.header("access-control-allow-origin", c.env.APP_ORIGIN);
-  c.header("access-control-allow-headers", "content-type");
+  c.header("access-control-allow-headers", "content-type, authorization");
   c.header("access-control-allow-methods", "GET,POST,OPTIONS");
 
   if (c.req.method === "OPTIONS") {
@@ -502,7 +502,7 @@ function errorResponse(
       headers: {
         "content-type": "application/json; charset=utf-8",
         "access-control-allow-origin": c.env.APP_ORIGIN,
-        "access-control-allow-headers": "content-type",
+        "access-control-allow-headers": "content-type, authorization",
         "access-control-allow-methods": "GET,POST,OPTIONS",
       },
     },
