@@ -7,7 +7,7 @@
     "worker"
   ],
   "scripts": {
-    "prepare": "node -e \"const { spawnSync } = require('node:child_process'); const cmd = process.platform === 'win32' ? 'npx.cmd' : 'npx'; const result = spawnSync(cmd, ['husky'], { stdio: 'inherit', shell: false }); process.exit(result.status === 0 ? 0 : 0);\"",
+    "prepare": "node -e \"const { existsSync } = require('node:fs'); const { spawnSync } = require('node:child_process'); const huskyBin = process.platform === 'win32' ? 'node_modules\\\\.bin\\\\husky.cmd' : 'node_modules/.bin/husky'; if (!existsSync(huskyBin)) process.exit(0); const result = spawnSync(huskyBin, { stdio: 'inherit', shell: false }); process.exit(result.status ?? 0);\"",
     "build": "npm run build:web",
     "dev:web": "npm --prefix frontend run dev",
     "dev:worker": "npm --prefix worker run dev",
