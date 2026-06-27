@@ -69,6 +69,11 @@ function apiErrorMessage(payload: ApiErrorPayload, fallback: string) {
   return fallback;
 }
 
+function getWebSocketBaseUrl() {
+  const base = API_BASE || window.location.origin;
+  return base.replace(/^http/, "ws");
+}
+
 export default function App() {
   const [view, setView] = useState<ViewState>("idle");
   const [pairingMode, setPairingMode] = useState<"landing" | "receive">(
@@ -158,9 +163,7 @@ export default function App() {
     }
 
     let active = true;
-    const socketUrl = new URL(
-      `${window.location.origin.replace(/^http/, "ws")}/api/ws/${sessionId}`,
-    );
+    const socketUrl = new URL(`${getWebSocketBaseUrl()}/api/ws/${sessionId}`);
     socketUrl.searchParams.set("accessToken", accessToken);
     socketUrl.searchParams.set("deviceId", deviceId);
 
