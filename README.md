@@ -71,6 +71,36 @@ Not in phase 1:
 
 - R2
 
+## Env And Deploy
+
+Frontend Pages env:
+
+- `VITE_API_BASE_URL=https://your-worker.your-subdomain.workers.dev`
+
+Frontend local env:
+
+- copy [frontend/.env.example](/D:/FlowDrop/frontend/.env.example) to `frontend/.env`
+- for local dev you can leave it empty because Vite proxies `/api` to `127.0.0.1:8787`
+- set it when the frontend should talk to a deployed Worker
+
+Worker local env:
+
+- copy [worker/.dev.vars.example](/D:/FlowDrop/worker/.dev.vars.example) to `worker/.dev.vars`
+- set `SESSION_SECRET` there for local Wrangler dev
+
+Worker production env in Cloudflare:
+
+- plain text variable: `APP_ORIGIN=https://your-pages-domain.pages.dev`
+- secret: `SESSION_SECRET`
+- D1 binding: `DB`
+- Durable Object binding: `PAIRING_SESSION`
+
+Deploy shape:
+
+- Cloudflare Pages deploys `frontend/`
+- Cloudflare Worker deploys `worker/`
+- Pages does not automatically deploy the separate Worker in this repo
+
 ## Architecture Choice
 
 Use each Cloudflare piece for one job:
