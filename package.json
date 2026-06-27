@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "prepare": "husky",
+    "build": "npm run build:web",
     "dev:web": "npm --prefix frontend run dev",
     "dev:worker": "npm --prefix worker run dev",
     "lint": "eslint . --max-warnings=0",
