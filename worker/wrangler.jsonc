@@ -8,13 +8,13 @@
     "head_sampling_rate": 1,
   },
   "vars": {
-    "APP_ORIGIN": "http://localhost:5173",
+    "APP_ORIGIN": "https://flowdrop.pages.dev",
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "flowdrop",
-      "database_id": "replace-with-real-d1-id",
+      "database_id": "98dbf91e-877c-4582-9b7d-ae03e12c78da",
       "migrations_dir": "../database/migrations",
     },
   ],
@@ -29,10 +29,14 @@
   "migrations": [
     {
       "tag": "v1",
-      "new_sqlite_classes": ["PairingSession"],
+      "new_sqlite_classes": [
+        "PairingSession"
+      ],
     },
   ],
   "triggers": {
-    "crons": ["*/10 * * * *"],
+    "crons": [
+      "*/10 * * * *"
+    ],
   },
 }
