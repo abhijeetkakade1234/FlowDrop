@@ -70,6 +70,7 @@ export type SessionFeatureProps = {
   onReset: () => void;
   onSend: () => void;
   paired: boolean;
+  resetPending: boolean;
   sessionExpiresAt: number | null;
   statusText: string;
 };

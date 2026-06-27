@@ -176,10 +176,27 @@ export class PairingSession extends DurableObject<Env> {
       return;
     }
 
-    const payload = JSON.parse(message) as {
+    let payload: {
       type?: string;
       data?: { text?: string };
     };
+    try {
+      payload = JSON.parse(message) as {
+        type?: string;
+        data?: { text?: string };
+      };
+    } catch {
+      webSocket.send(
+        JSON.stringify({
+          type: "ERROR",
+          data: {
+            code: "BAD_EVENT",
+            message: "Unsupported event",
+          },
+        }),
+      );
+      return;
+    }
     if (payload.type !== "SEND_TEXT") {
       webSocket.send(
         JSON.stringify({
@@ -281,6 +298,11 @@ export class PairingSession extends DurableObject<Env> {
     const pair = new WebSocketPair();
     const client = pair[0];
     const server = pair[1];
+    const requestedProtocols =
+      request.headers.get("sec-websocket-protocol")?.split(",") ?? [];
+    const acceptedProtocol = requestedProtocols
+      .map((value) => value.trim())
+      .find((value) => value === "flowdrop");
 
     server.serializeAttachment({ deviceId, role });
     this.ctx.acceptWebSocket(server);
@@ -311,6 +333,11 @@ export class PairingSession extends DurableObject<Env> {
     });
 
     return new Response(null, {
+      headers: acceptedProtocol
+        ? {
+            "sec-websocket-protocol": acceptedProtocol,
+          }
+        : undefined,
       status: 101,
       webSocket: client,
     });

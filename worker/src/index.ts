@@ -413,13 +413,28 @@ function extractBearerToken(headerValue: string | undefined | null) {
   return token;
 }
 
+function extractProtocolToken(headerValue: string | undefined | null) {
+  if (!headerValue) {
+    return null;
+  }
+
+  for (const rawPart of headerValue.split(",")) {
+    const part = rawPart.trim();
+    if (part.startsWith("auth.")) {
+      return part.slice(5) || null;
+    }
+  }
+
+  return null;
+}
+
 async function authenticateSessionAccess(
   c: AppContext,
   requestedSessionId?: string | null,
 ) {
   const sessionId = requestedSessionId ?? c.req.param("sessionId");
   const token =
-    c.req.query("accessToken") ??
+    extractProtocolToken(c.req.header("sec-websocket-protocol")) ??
     extractBearerToken(c.req.header("authorization"));
   if (!sessionId) {
     return {

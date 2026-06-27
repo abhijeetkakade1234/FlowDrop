@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import { UiCircleButton } from "../../../shared/ui/primitives";
 import { FlowDropLogo } from "../../../shared/ui/liquid/FlowDropLogo";
 import type { PairingFeatureProps } from "../pairing.types";
 import { formatOtp, formatTimeLeft, splitOtpDigits } from "../pairing.utils";
@@ -96,9 +98,31 @@ function ArrowRightIcon() {
   );
 }
 
+function BackIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="pairing-feature__icon-svg pairing-feature__icon-svg--small"
+      viewBox="0 0 20 20"
+    >
+      <path
+        d="M11.75 4.5 6.25 10l5.5 5.5"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.9"
+      />
+    </svg>
+  );
+}
+
 export function PairingFeature({
+  createPending,
   joinOtp,
+  joinPending,
   mode,
+  onBack,
   onCreateSession,
   onJoinOtpChange,
   onJoinSession,
@@ -107,43 +131,86 @@ export function PairingFeature({
   otpExpiresAt,
   statusText,
 }: PairingFeatureProps) {
+  const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
+
+  useEffect(() => {
+    if (!otpExpiresAt) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setNow(Math.floor(Date.now() / 1000));
+    }, 1000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [otpExpiresAt]);
+
   const otpDigits = splitOtpDigits(otp || "      ");
-  const otpSecondsLeft = otpExpiresAt
-    ? otpExpiresAt - Math.floor(Date.now() / 1000)
-    : 0;
+  const otpSecondsLeft = otpExpiresAt ? otpExpiresAt - now : 0;
+  const createBusy = createPending;
+  const joinBusy = joinPending;
 
   return (
     <section className="pairing-feature">
-      <div className="pairing-feature__panel glass-window">
+      {mode !== "landing" ? (
+        <div className="pairing-feature__actions-bar">
+          <UiCircleButton
+            ariaLabel="Back"
+            className="pairing-feature__back"
+            onClick={onBack}
+            size="md"
+          >
+            <BackIcon />
+            <span className="pairing-feature__back-label">Back</span>
+          </UiCircleButton>
+        </div>
+      ) : null}
+
+      <div className="pairing-feature__panel">
         {mode === "landing" ? (
           <div className="pairing-feature__column pairing-feature__column--single">
-            <div className="pairing-feature__hero-logo">
-              <FlowDropLogo />
-            </div>
-            <div className="pairing-feature__copy">
-              <h2>FlowDrop</h2>
-              <p>Share anything. Everything disappears in 1 hour.</p>
+            <div className="pairing-feature__surface pairing-feature__surface--hero">
+              <div className="pairing-feature__hero-logo">
+                <FlowDropLogo />
+              </div>
+              <div className="pairing-feature__copy">
+                <h2>FlowDrop</h2>
+                <p>Share anything. Everything disappears in 1 hour.</p>
+              </div>
             </div>
 
-            <div className="pairing-feature__actions">
-              <button
-                className="pairing-feature__liquid-button pairing-feature__liquid-button--primary"
-                onClick={onCreateSession}
-                type="button"
-              >
-                <span className="pairing-feature__button-glow" />
-                <SendIcon />
-                <span>Send</span>
-              </button>
-              <button
-                className="pairing-feature__liquid-button pairing-feature__liquid-button--secondary"
-                onClick={onSelectReceive}
-                type="button"
-              >
-                <span className="pairing-feature__button-glow pairing-feature__button-glow--soft" />
-                <ReceiveIcon />
-                <span>Receive</span>
-              </button>
+            <div className="pairing-feature__surface pairing-feature__surface--actions">
+              <div className="pairing-feature__actions">
+                <button
+                  className="pairing-feature__liquid-button pairing-feature__liquid-button--primary"
+                  disabled={createBusy}
+                  onClick={onCreateSession}
+                  type="button"
+                >
+                  <span className="pairing-feature__button-glow" />
+                  {createBusy ? (
+                    <span
+                      className="pairing-feature__spinner"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <SendIcon />
+                  )}
+                  <span>Send</span>
+                </button>
+                <button
+                  className="pairing-feature__liquid-button pairing-feature__liquid-button--secondary"
+                  disabled={createBusy}
+                  onClick={onSelectReceive}
+                  type="button"
+                >
+                  <span className="pairing-feature__button-glow pairing-feature__button-glow--soft" />
+                  <ReceiveIcon />
+                  <span>Receive</span>
+                </button>
+              </div>
             </div>
 
             <p className="pairing-feature__hint">
@@ -152,80 +219,120 @@ export function PairingFeature({
           </div>
         ) : mode === "share" ? (
           <div className="pairing-feature__column pairing-feature__column--single">
-            <div className="pairing-feature__orb pairing-feature__orb--left" />
-            <div className="pairing-feature__copy">
-              <span className="section-kicker">Share</span>
-              <h2>Connect your device</h2>
-              <p>Enter this code on your other device to start sharing.</p>
-            </div>
-
-            <div className="pairing-feature__otp">
-              {otpDigits.map((digit, index) => (
-                <div className="otp-slot" key={`${digit}-${index}`}>
-                  <span>{digit.trim() || "·"}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="pairing-feature__meta">
-              <div className="status-pill status-pill--danger">
-                <span className="status-pill__dot" />
-                {otp
-                  ? `Expires in ${formatTimeLeft(otpSecondsLeft)}`
-                  : statusText}
+            <div className="pairing-feature__surface pairing-feature__surface--hero">
+              <div className="pairing-feature__orb pairing-feature__orb--left" />
+              <div className="pairing-feature__copy">
+                <span className="section-kicker">Share</span>
+                <h2>Connect your device</h2>
+                <p>Enter this code on your other device to start sharing.</p>
               </div>
-              <button
-                className="ghost-pill"
-                onClick={onCreateSession}
-                type="button"
-              >
-                <RefreshIcon />
-                Generate new code
-              </button>
+            </div>
+
+            <div className="pairing-feature__surface pairing-feature__surface--otp">
+              <div className="pairing-feature__otp">
+                {otpDigits.map((digit, index) => (
+                  <div className="otp-slot" key={`${digit}-${index}`}>
+                    <span>{digit.trim() || "."}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pairing-feature__surface pairing-feature__surface--meta">
+              <div className="pairing-feature__meta">
+                <div className="status-pill status-pill--danger">
+                  <span className="status-pill__dot" />
+                  {otp
+                    ? `Expires in ${formatTimeLeft(otpSecondsLeft)}`
+                    : statusText}
+                </div>
+                <button
+                  className="ghost-pill"
+                  disabled={createBusy}
+                  onClick={onCreateSession}
+                  type="button"
+                >
+                  {createBusy ? (
+                    <span
+                      className="pairing-feature__spinner pairing-feature__spinner--dark"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <RefreshIcon />
+                  )}
+                  Generate new code
+                </button>
+              </div>
             </div>
           </div>
         ) : (
           <div className="pairing-feature__column pairing-feature__column--single">
-            <div className="pairing-feature__orb pairing-feature__orb--right" />
-            <div className="pairing-feature__copy">
-              <span className="section-kicker">Receive</span>
-              <h2>Enter pairing code</h2>
-              <p>Enter the 6-digit code shown on the other device.</p>
+            <div className="pairing-feature__surface pairing-feature__surface--hero">
+              <div className="pairing-feature__orb pairing-feature__orb--right" />
+              <div className="pairing-feature__copy">
+                <span className="section-kicker">Receive</span>
+                <h2>Enter pairing code</h2>
+                <p>Enter the 6-digit code shown on the other device.</p>
+              </div>
             </div>
 
-            <form
-              className="pairing-form"
-              onSubmit={(event) => {
-                event.preventDefault();
-                onJoinSession();
-              }}
-            >
-              <input
-                className="glass-input-row"
-                inputMode="numeric"
-                onChange={(event) =>
-                  onJoinOtpChange(formatOtp(event.target.value))
-                }
-                placeholder="483 921"
-                value={joinOtp}
-              />
+            <div className="pairing-feature__surface pairing-feature__surface--form">
+              <form
+                className="pairing-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  onJoinSession();
+                }}
+              >
+                <input
+                  className="glass-input-row"
+                  disabled={joinBusy}
+                  inputMode="numeric"
+                  onChange={(event) =>
+                    onJoinOtpChange(formatOtp(event.target.value))
+                  }
+                  placeholder="483 921"
+                  value={joinOtp}
+                />
 
-              <button className="primary-liquid-button" type="submit">
-                <span className="pairing-feature__button-glow" />
-                <span>Connect</span>
-                <ArrowRightIcon />
+                <button
+                  className="primary-liquid-button"
+                  disabled={joinBusy}
+                  type="submit"
+                >
+                  <span className="pairing-feature__button-glow" />
+                  {joinBusy ? (
+                    <span
+                      className="pairing-feature__spinner"
+                      aria-hidden="true"
+                    />
+                  ) : null}
+                  <span>Connect</span>
+                  {!joinBusy ? <ArrowRightIcon /> : null}
+                </button>
+              </form>
+            </div>
+
+            <div className="pairing-feature__surface pairing-feature__surface--secondary-action">
+              <button
+                className="pairing-feature__liquid-button pairing-feature__liquid-button--secondary"
+                disabled={createBusy}
+                onClick={onCreateSession}
+                type="button"
+              >
+                <span className="pairing-feature__button-glow pairing-feature__button-glow--soft" />
+                {createBusy ? (
+                  <span
+                    className="pairing-feature__spinner pairing-feature__spinner--dark"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <PlusIcon />
+                )}
+                Create new session
               </button>
-            </form>
+            </div>
 
-            <button
-              className="pairing-feature__liquid-button pairing-feature__liquid-button--secondary"
-              onClick={onCreateSession}
-              type="button"
-            >
-              <span className="pairing-feature__button-glow pairing-feature__button-glow--soft" />
-              <PlusIcon />
-              Create new session
-            </button>
             <p className="pairing-feature__hint">
               Secure 256-bit encrypted connection.
             </p>

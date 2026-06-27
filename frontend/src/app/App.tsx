@@ -13,6 +13,10 @@ import { AppShell } from "../shared/ui/AppShell";
 import "./app.css";
 
 type ViewState = "idle" | "hosting" | "joining" | "connected";
+type InstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+};
 type ApiErrorPayload = {
   error?:
     | string
@@ -23,6 +27,7 @@ type ApiErrorPayload = {
 };
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
+const FLOWDROP_SOCKET_PROTOCOL = "flowdrop";
 const SESSION_STORAGE_KEY = "flowdrop.session";
 const DEVICE_ID_STORAGE_KEY = "flowdrop.deviceId";
 
@@ -49,21 +54,93 @@ function friendlyError(error: unknown, fallback: string) {
   if (message === "Failed to fetch") {
     return "Could not reach FlowDrop. Check that the backend is running.";
   }
+  return friendlyErrorMessage(undefined, message, fallback);
+}
+
+function friendlyErrorMessage(
+  code: string | undefined,
+  message: string | undefined,
+  fallback: string,
+) {
+  switch (code) {
+    case "DEVICE_ID_REQUIRED":
+      return "This device could not start sharing. Refresh and try again.";
+    case "OTP_INVALID":
+      return "Enter the 6-digit code.";
+    case "OTP_NOT_FOUND":
+      return "That code expired or is no longer valid.";
+    case "JOIN_ATTEMPTS_EXCEEDED":
+      return "Too many tries for that code. Generate a new one.";
+    case "SESSION_ALREADY_PAIRED":
+      return "That code has already been used on another device.";
+    case "SESSION_NOT_JOINABLE":
+      return "That code is no longer available.";
+    case "SESSION_ACCESS_DENIED":
+    case "ACCESS_TOKEN_REQUIRED":
+      return "This session expired or is no longer available on this device.";
+    case "RATE_LIMITED":
+      return "Too many tries. Wait a moment and try again.";
+    case "MESSAGE_EMPTY":
+      return "Type a message before sending.";
+    case "TEXT_TOO_LARGE":
+      return "That message is too long. Split it into smaller parts.";
+    case "SESSION_MESSAGE_LIMIT_REACHED":
+      return "This chat is full. Start a new session to keep sharing.";
+    case "MESSAGE_PERSIST_FAILED":
+      return "Your message could not be sent. Try again.";
+    case "SESSION_NOT_READY":
+      return "The connection is still getting ready. Try again in a moment.";
+    case "BAD_EVENT":
+      return "Something went wrong with the live connection. Try again.";
+    case "INTERNAL_ERROR":
+      return "Something went wrong. Try again in a moment.";
+    default:
+      break;
+  }
+
+  if (!message) {
+    return fallback;
+  }
+
+  if (
+    message === "Could not restore session" ||
+    message === "Could not connect"
+  ) {
+    return "This session could not be restored. Start a new one.";
+  }
+
+  if (message === "Could not persist message") {
+    return "Your message could not be sent. Try again.";
+  }
+
+  if (message === "Session not ready") {
+    return "The connection is still getting ready. Try again in a moment.";
+  }
+
+  if (message === "Unsupported event") {
+    return "Something went wrong with the live connection. Try again.";
+  }
+
   return message;
 }
 
 function apiErrorMessage(payload: ApiErrorPayload, fallback: string) {
   if (typeof payload.error === "string" && payload.error.trim()) {
-    return payload.error;
+    return friendlyErrorMessage(undefined, payload.error, fallback);
   }
 
   if (
     payload.error &&
     typeof payload.error === "object" &&
-    typeof payload.error.message === "string" &&
-    payload.error.message.trim()
+    ((typeof payload.error.message === "string" &&
+      payload.error.message.trim()) ||
+      typeof payload.error.code === "string")
   ) {
-    return payload.error.message;
+    return friendlyErrorMessage(
+      payload.error.code,
+      payload.error.message,
+      fallback,
+    );
   }
 
   return fallback;
@@ -76,9 +153,9 @@ function getWebSocketBaseUrl() {
 
 export default function App() {
   const [view, setView] = useState<ViewState>("idle");
-  const [pairingMode, setPairingMode] = useState<"landing" | "receive">(
-    "landing",
-  );
+  const [pairingMode, setPairingMode] = useState<
+    "landing" | "receive" | "share"
+  >("landing");
   const [otp, setOtp] = useState("");
   const [joinOtp, setJoinOtp] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -94,10 +171,53 @@ export default function App() {
   const [sessionExpiresAt, setSessionExpiresAt] = useState<number | null>(null);
   const [otpExpiresAt, setOtpExpiresAt] = useState<number | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [createPending, setCreatePending] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(
+    null,
+  );
+  const [joinPending, setJoinPending] = useState(false);
+  const [resetPending, setResetPending] = useState(false);
   const socketRef = useRef<WebSocket | null>(null);
   const errorTimerRef = useRef<number | null>(null);
   const closingSessionRef = useRef(false);
   const deviceId = useMemo(() => getDeviceId(), []);
+
+  useEffect(() => {
+    function isStandalone() {
+      return (
+        window.matchMedia("(display-mode: standalone)").matches ||
+        window.matchMedia("(display-mode: window-controls-overlay)").matches ||
+        ("standalone" in navigator &&
+          Boolean(
+            (navigator as Navigator & { standalone?: boolean }).standalone,
+          ))
+      );
+    }
+
+    function handleBeforeInstallPrompt(event: Event) {
+      if (isStandalone()) {
+        return;
+      }
+
+      event.preventDefault();
+      setInstallPrompt(event as InstallPromptEvent);
+    }
+
+    function handleAppInstalled() {
+      setInstallPrompt(null);
+    }
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
+
+    return () => {
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt,
+      );
+      window.removeEventListener("appinstalled", handleAppInstalled);
+    };
+  }, []);
 
   useEffect(() => {
     if (!errorText) {
@@ -129,6 +249,8 @@ export default function App() {
 
     try {
       const saved = JSON.parse(raw) as {
+        otp?: string;
+        otpExpiresAt?: number | null;
         sessionId: string;
         role: "host" | "peer";
         accessToken: string;
@@ -144,6 +266,16 @@ export default function App() {
       setRole(saved.role);
       setAccessToken(saved.accessToken);
       setSessionExpiresAt(saved.sessionExpiresAt);
+      if (
+        saved.role === "host" &&
+        saved.otp &&
+        saved.otpExpiresAt &&
+        saved.otpExpiresAt > Math.floor(Date.now() / 1000)
+      ) {
+        setOtp(saved.otp);
+        setOtpExpiresAt(saved.otpExpiresAt);
+        setPairingMode("share");
+      }
       setView("connected");
       setStatusText("Restoring session...");
     } catch {
@@ -164,7 +296,6 @@ export default function App() {
 
     let active = true;
     const socketUrl = new URL(`${getWebSocketBaseUrl()}/api/ws/${sessionId}`);
-    socketUrl.searchParams.set("accessToken", accessToken);
     socketUrl.searchParams.set("deviceId", deviceId);
 
     async function connect() {
@@ -192,7 +323,10 @@ export default function App() {
       setSessionExpiresAt(payload.sessionExpiresAt);
       setStatusText("Connecting...");
 
-      const socket = new WebSocket(socketUrl);
+      const socket = new WebSocket(socketUrl, [
+        FLOWDROP_SOCKET_PROTOCOL,
+        `auth.${accessToken}`,
+      ]);
       socketRef.current = socket;
 
       socket.addEventListener("open", () => {
@@ -206,7 +340,15 @@ export default function App() {
           return;
         }
 
-        const payload = JSON.parse(event.data) as ServerEvent;
+        let payload: ServerEvent;
+        try {
+          payload = JSON.parse(event.data) as ServerEvent;
+        } catch {
+          setErrorText(
+            "Received an invalid live update. Reconnect and try again.",
+          );
+          return;
+        }
         if (payload.type === "TEXT_MESSAGE") {
           setMessages((current) => {
             if (current.some((message) => message.id === payload.data.id)) {
@@ -246,7 +388,13 @@ export default function App() {
         }
 
         if (payload.type === "ERROR") {
-          setErrorText(payload.data.message);
+          setErrorText(
+            friendlyErrorMessage(
+              payload.data.code,
+              payload.data.message,
+              "Something went wrong. Try again.",
+            ),
+          );
         }
       });
 
@@ -257,12 +405,16 @@ export default function App() {
             return;
           }
           setStatusText("Disconnected");
+          setErrorText(
+            "Connection lost. Reopen the session or start a new one.",
+          );
         }
       });
     }
 
     connect().catch((error: unknown) => {
-      setErrorText(friendlyError(error, "Could not connect"));
+      closeSessionLocally();
+      setErrorText(friendlyError(error, "This session could not be restored."));
       setView("idle");
     });
 
@@ -285,12 +437,19 @@ export default function App() {
         sessionId,
         role,
         accessToken,
+        otp: role === "host" ? otp : "",
+        otpExpiresAt: role === "host" ? otpExpiresAt : null,
         sessionExpiresAt,
       }),
     );
-  }, [accessToken, role, sessionExpiresAt, sessionId]);
+  }, [accessToken, otp, otpExpiresAt, role, sessionExpiresAt, sessionId]);
 
   async function createSession() {
+    if (createPending) {
+      return;
+    }
+
+    setCreatePending(true);
     setView("hosting");
     setStatusText("Creating session...");
     setErrorText(null);
@@ -312,6 +471,7 @@ export default function App() {
 
       setOtp(formatOtp(payload.otp));
       setOtpExpiresAt(Math.floor(Date.now() / 1000) + payload.otpExpiresIn);
+      setPairingMode("share");
       setSessionId(payload.sessionId);
       setRole("host");
       setAccessToken(payload.accessToken);
@@ -322,10 +482,17 @@ export default function App() {
       setView("idle");
       setPairingMode("landing");
       setErrorText(friendlyError(error, "Could not create session"));
+    } finally {
+      setCreatePending(false);
     }
   }
 
   async function joinSession() {
+    if (joinPending) {
+      return;
+    }
+
+    setJoinPending(true);
     setView("joining");
     setErrorText(null);
     setStatusText("Joining...");
@@ -360,6 +527,8 @@ export default function App() {
       setView("idle");
       setPairingMode("receive");
       setErrorText(friendlyError(error, "Could not join session"));
+    } finally {
+      setJoinPending(false);
     }
   }
 
@@ -400,33 +569,79 @@ export default function App() {
   }
 
   async function resetSession() {
+    if (resetPending) {
+      return;
+    }
+
+    setResetPending(true);
     if (!sessionId || !accessToken) {
       closeSessionLocally();
+      setResetPending(false);
       return;
     }
 
     try {
-      await fetch(`${API_BASE}/api/session/${sessionId}/reset`, {
-        method: "POST",
-        headers: {
-          authorization: `Bearer ${accessToken}`,
+      const response = await fetch(
+        `${API_BASE}/api/session/${sessionId}/reset`,
+        {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${accessToken}`,
+          },
         },
-      });
+      );
+
+      if (!response.ok) {
+        const payload = (await response
+          .json()
+          .catch(() => null)) as ApiErrorPayload | null;
+        throw new Error(
+          apiErrorMessage(payload ?? {}, "Could not end this session."),
+        );
+      }
     } catch {
-      // ponytail: best-effort remote reset, local teardown still wins.
+      setErrorText("Could not end this session. Try again in a moment.");
+      setResetPending(false);
+      return;
     }
 
     closeSessionLocally();
+    setResetPending(false);
+  }
+
+  async function triggerInstall() {
+    if (!installPrompt) {
+      setErrorText("Install option is not available in this browser yet.");
+      return;
+    }
+
+    await installPrompt.prompt();
+    const choice = await installPrompt.userChoice;
+    if (choice.outcome === "accepted") {
+      setInstallPrompt(null);
+    }
   }
 
   const shouldShowSessionFeature =
     view === "connected" &&
     sessionId &&
     accessToken &&
-    (deviceCount >= 2 || role === "peer");
-  const pairingScreenMode = otp ? "share" : pairingMode;
+    (deviceCount >= 2 || role === "peer" || (role === "host" && !otp));
+  const pairingScreenMode =
+    pairingMode === "share" && otp
+      ? "share"
+      : pairingMode === "receive"
+        ? "receive"
+        : "landing";
+  const showInstallChip =
+    Boolean(installPrompt) &&
+    !shouldShowSessionFeature &&
+    pairingScreenMode === "landing";
   return (
-    <AppShell>
+    <AppShell
+      onInstall={() => void triggerInstall()}
+      showInstall={showInstallChip}
+    >
       {errorText ? <div className="app-snackbar">{errorText}</div> : null}
       {sessionClosedNotice ? (
         <div className="app-modal-backdrop" role="presentation">
@@ -458,14 +673,24 @@ export default function App() {
           onReset={resetSession}
           onSend={sendText}
           paired={deviceCount >= 2}
+          resetPending={resetPending}
           sessionExpiresAt={sessionExpiresAt}
           statusText={statusText}
         />
       ) : (
         <PairingFeature
+          createPending={createPending}
           errorText={null}
+          joinPending={joinPending}
           joinOtp={joinOtp}
           mode={pairingScreenMode}
+          onBack={() => {
+            if (pairingScreenMode === "share") {
+              void resetSession();
+              return;
+            }
+            setPairingMode("landing");
+          }}
           onCreateSession={createSession}
           onJoinOtpChange={setJoinOtp}
           onJoinSession={joinSession}
