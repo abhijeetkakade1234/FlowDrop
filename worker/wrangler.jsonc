@@ -1,0 +1,38 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "flowdrop-worker",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-24",
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+  },
+  "vars": {
+    "APP_ORIGIN": "http://localhost:5173",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "flowdrop",
+      "database_id": "replace-with-real-d1-id",
+      "migrations_dir": "../database/migrations",
+    },
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "PAIRING_SESSION",
+        "class_name": "PairingSession",
+      },
+    ],
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["PairingSession"],
+    },
+  ],
+  "triggers": {
+    "crons": ["*/10 * * * *"],
+  },
+}

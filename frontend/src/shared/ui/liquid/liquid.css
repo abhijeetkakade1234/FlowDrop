@@ -1,0 +1,40 @@
+.flowdrop-logo {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+.liquid-panel,
+.liquid-pill {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(24px) saturate(180%);
+  border: 0.5px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 40px 60px -18px rgba(0, 93, 184, 0.1);
+}
+
+.liquid-pill {
+  align-items: center;
+  border-radius: 999px;
+  display: inline-flex;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+}
+
+.liquid-icon-button {
+  align-items: center;
+  background: linear-gradient(
+    135deg,
+    rgba(76, 149, 255, 0.96),
+    rgba(0, 93, 184, 0.96)
+  );
+  border: 0;
+  border-radius: 999px;
+  box-shadow: 0 18px 34px rgba(0, 93, 184, 0.2);
+  color: white;
+  cursor: pointer;
+  display: inline-flex;
+  font: 700 1rem/1 var(--font-display);
+  height: 3rem;
+  justify-content: center;
+  width: 3rem;
+}

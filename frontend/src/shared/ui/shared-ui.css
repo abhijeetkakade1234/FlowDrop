@@ -1,0 +1,221 @@
+.app-shell {
+  min-height: 100dvh;
+  position: relative;
+}
+
+.app-shell__shader {
+  background:
+    radial-gradient(circle at top, rgba(164, 214, 255, 0.65), transparent 40%),
+    radial-gradient(
+      circle at 85% 20%,
+      rgba(117, 163, 255, 0.2),
+      transparent 28%
+    ),
+    linear-gradient(180deg, #fbf8fb 0%, #f4f0f4 100%);
+  inset: 0;
+  position: fixed;
+  z-index: 0;
+}
+
+.app-shell__content {
+  align-items: stretch;
+  display: flex;
+  margin: 0 auto;
+  max-width: 96rem;
+  min-height: 100dvh;
+  padding: 1rem;
+  position: relative;
+  z-index: 1;
+}
+
+.glass-window {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.74),
+      rgba(247, 249, 255, 0.58)
+    ),
+    rgba(255, 255, 255, 0.52);
+  backdrop-filter: blur(28px) saturate(185%);
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 40px 80px -24px rgba(102, 143, 224, 0.18);
+}
+
+.status-pill,
+.ghost-pill {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.42);
+  backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  box-shadow: 0 10px 24px rgba(0, 93, 184, 0.08);
+  color: var(--color-text);
+  display: inline-flex;
+  font: var(--type-body-sm);
+  gap: 0.65rem;
+  padding: 0.8rem 1rem;
+}
+
+.status-pill--danger {
+  color: var(--color-text);
+}
+
+.status-pill__dot,
+.status-pill__dot--success {
+  background: var(--color-danger);
+  border-radius: 999px;
+  display: inline-block;
+  height: 0.55rem;
+  width: 0.55rem;
+}
+
+.status-pill__dot--success {
+  background: var(--color-success);
+}
+
+.status-pill__muted {
+  color: var(--color-text-muted);
+}
+
+.ghost-pill {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.76),
+    rgba(244, 247, 255, 0.62)
+  );
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.ghost-pill__icon {
+  font-size: 1.05rem;
+}
+
+.primary-liquid-button {
+  align-items: center;
+  background: linear-gradient(135deg, #64a3ff 0%, #1d78de 100%);
+  border: 0;
+  border-radius: 999px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    0 20px 40px rgba(57, 123, 214, 0.24);
+  color: white;
+  cursor: pointer;
+  display: inline-flex;
+  font: var(--type-label);
+  gap: 0.8rem;
+  justify-content: center;
+  letter-spacing: 0.06em;
+  min-height: 4.4rem;
+  padding: 0 1.6rem;
+  text-transform: none;
+}
+
+.glass-input-row {
+  background: rgba(255, 255, 255, 0.48);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 999px;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.55);
+  color: var(--color-text);
+  font: 600 1.7rem/1 var(--font-display);
+  letter-spacing: 0.28em;
+  outline: none;
+  padding: 1.15rem 1.5rem;
+  text-align: center;
+  width: 100%;
+}
+
+.glass-input-row::placeholder {
+  color: rgba(65, 71, 83, 0.32);
+}
+
+.section-kicker {
+  color: var(--color-primary);
+  font: var(--type-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.feature-error {
+  color: #9d2020;
+  font: var(--type-body-sm);
+  margin: 0.75rem 0 0;
+  text-align: center;
+}
+
+.app-snackbar {
+  background: rgba(35, 39, 47, 0.82);
+  backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  bottom: 1.25rem;
+  color: white;
+  left: 50%;
+  max-width: min(90vw, 32rem);
+  padding: 0.85rem 1.1rem;
+  position: fixed;
+  text-align: center;
+  transform: translateX(-50%);
+  z-index: 20;
+}
+
+.app-modal-backdrop {
+  align-items: center;
+  background: rgba(240, 244, 255, 0.3);
+  backdrop-filter: blur(10px);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 1rem;
+  position: fixed;
+  z-index: 30;
+}
+
+.app-modal {
+  max-width: min(92vw, 26rem);
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.app-modal h2 {
+  font: var(--type-headline);
+  margin: 0 0 0.6rem;
+}
+
+.app-modal p {
+  color: var(--color-text-muted);
+  font: var(--type-body-md);
+  margin: 0 0 1.2rem;
+}
+
+.app-modal__button {
+  min-width: 9rem;
+}
+
+@media (max-width: 900px) {
+  .app-shell__content {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+@media (max-width: 640px) {
+  .status-pill,
+  .ghost-pill {
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+  }
+
+  .glass-input-row {
+    font-size: 1.25rem;
+    letter-spacing: 0.18em;
+    padding: 1rem 1.1rem;
+  }
+
+  .primary-liquid-button {
+    min-height: 3.75rem;
+    width: 100%;
+  }
+}

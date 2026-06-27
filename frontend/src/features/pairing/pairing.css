@@ -1,0 +1,323 @@
+.pairing-feature {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  min-height: calc(100dvh - 2rem);
+  padding: 0.75rem 0;
+}
+
+.pairing-feature__panel {
+  border-radius: 2.75rem;
+  display: flex;
+  justify-content: center;
+  max-width: 60rem;
+  min-height: min(46rem, calc(100dvh - 3.5rem));
+  padding: 3rem 3rem 2.25rem;
+  width: 100%;
+}
+
+.pairing-feature__column {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  justify-content: center;
+  min-width: 0;
+  position: relative;
+  text-align: center;
+  width: 100%;
+}
+
+.pairing-feature__column--single {
+  max-width: 34rem;
+}
+
+.pairing-feature__hero-logo {
+  filter: drop-shadow(0 26px 46px rgba(76, 149, 255, 0.26));
+  height: 9rem;
+  margin-bottom: 0.25rem;
+  width: 9rem;
+}
+
+.pairing-feature__orb {
+  border-radius: 999px;
+  filter: blur(18px);
+  height: 7rem;
+  opacity: 0.38;
+  position: absolute;
+  width: 7rem;
+}
+
+.pairing-feature__orb--left {
+  background: rgba(76, 149, 255, 0.26);
+  left: 0;
+  top: 0;
+}
+
+.pairing-feature__orb--right {
+  background: rgba(214, 227, 255, 0.9);
+  right: 0;
+  top: 1.5rem;
+}
+
+.pairing-feature__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 28rem;
+}
+
+.pairing-feature__copy h2 {
+  font: 700 clamp(2rem, 3.6vw, 3rem) / 1.02 var(--font-display);
+  letter-spacing: -0.04em;
+  margin: 0;
+}
+
+.pairing-feature__copy p,
+.pairing-feature__hint {
+  color: #7d8598;
+  font: 400 1rem/1.5 var(--font-body);
+  margin: 0;
+}
+
+.pairing-feature__otp {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  width: 100%;
+}
+
+.otp-slot {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.64);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 2rem;
+  box-shadow: 0 16px 28px rgba(0, 93, 184, 0.08);
+  display: flex;
+  height: 4.8rem;
+  justify-content: center;
+}
+
+.otp-slot span {
+  color: var(--color-primary);
+  font: var(--type-display);
+}
+
+.pairing-feature__meta {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.pairing-feature__actions {
+  display: grid;
+  gap: 1rem;
+  margin-top: 0.25rem;
+  width: min(100%, 36rem);
+}
+
+.pairing-feature__liquid-button {
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 0.75rem;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0 1.5rem;
+  position: relative;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
+  width: 100%;
+}
+
+.pairing-feature__liquid-button:hover {
+  transform: translateY(-1px);
+}
+
+.pairing-form .primary-liquid-button {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(120, 182, 255, 0.62),
+      rgba(55, 129, 228, 0.48)
+    ),
+    rgba(110, 170, 250, 0.2);
+  backdrop-filter: blur(32px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.58),
+    inset 0 -10px 22px rgba(35, 97, 186, 0.08),
+    0 18px 34px rgba(87, 140, 223, 0.1);
+  min-height: 4rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.pairing-feature__liquid-button--primary {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(117, 178, 255, 0.74),
+      rgba(43, 121, 226, 0.62)
+    ),
+    rgba(103, 164, 248, 0.3);
+  backdrop-filter: blur(32px) saturate(190%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.62),
+    inset 0 -12px 22px rgba(25, 88, 180, 0.12),
+    0 18px 34px rgba(87, 140, 223, 0.14);
+  color: #fff;
+  font: 600 1.05rem/1 var(--font-body);
+  letter-spacing: 0.02em;
+  min-height: 4rem;
+  text-transform: none;
+}
+
+.pairing-feature__liquid-button--secondary {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(241, 247, 255, 0.5),
+      rgba(219, 235, 255, 0.28)
+    ),
+    rgba(198, 223, 255, 0.18);
+  backdrop-filter: blur(32px) saturate(185%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.86),
+    inset 0 -12px 18px rgba(190, 210, 240, 0.08),
+    0 16px 30px rgba(154, 173, 214, 0.06);
+  color: #191c24;
+  font: 500 1rem/1 var(--font-body);
+  justify-content: center;
+  min-height: 4rem;
+  padding: 0 1.5rem;
+  width: 100%;
+}
+
+.pairing-feature__button-glow {
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.56) 0%,
+    rgba(255, 255, 255, 0) 72%
+  );
+  height: 140%;
+  left: -8%;
+  pointer-events: none;
+  position: absolute;
+  top: -58%;
+  width: 42%;
+}
+
+.pairing-feature__button-glow--soft {
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(255, 255, 255, 0) 75%
+  );
+}
+
+.pairing-feature__icon-svg {
+  align-items: center;
+  color: currentColor;
+  display: inline-flex;
+  justify-content: center;
+  position: relative;
+  width: 1rem;
+  z-index: 1;
+}
+
+.pairing-feature__icon-svg--small {
+  width: 0.95rem;
+}
+
+.pairing-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: min(100%, 24rem);
+}
+
+.pairing-feature__hint {
+  font: 500 0.8rem/1.4 var(--font-body);
+  letter-spacing: 0.12em;
+  margin-top: 0.5rem;
+  text-transform: uppercase;
+}
+
+@media (max-width: 980px) {
+  .pairing-feature__panel {
+    min-height: 0;
+    padding: 2rem 1.5rem 1.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .pairing-feature {
+    min-height: calc(100dvh - 2rem);
+    padding: 0.5rem 0;
+  }
+
+  .pairing-feature__panel {
+    border-radius: 2rem;
+    gap: 2rem;
+    min-height: calc(100dvh - 2rem);
+    padding: 1.5rem 1rem 1.25rem;
+  }
+
+  .pairing-feature__column {
+    gap: 1.4rem;
+  }
+
+  .pairing-feature__copy h2 {
+    font-size: 1.75rem;
+  }
+
+  .pairing-feature__copy p {
+    font-size: 0.95rem;
+  }
+
+  .pairing-feature__actions {
+    width: 100%;
+  }
+
+  .pairing-feature__hero-logo {
+    height: 7rem;
+    width: 7rem;
+  }
+
+  .pairing-feature__otp {
+    gap: 0.35rem;
+  }
+
+  .otp-slot {
+    border-radius: 1.25rem;
+    height: 3.35rem;
+  }
+
+  .otp-slot span {
+    font-size: 1.85rem;
+  }
+
+  .pairing-feature__orb {
+    display: none;
+  }
+
+  .pairing-feature__hint {
+    line-height: 1.5;
+  }
+}
+
+@media (max-width: 420px) {
+  .pairing-feature__otp {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .otp-slot {
+    height: 3.6rem;
+  }
+}

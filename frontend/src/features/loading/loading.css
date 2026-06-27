@@ -1,0 +1,68 @@
+.loading-capsules {
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+.loading-capsule {
+  align-items: center;
+  animation: loading-float 7s ease-in-out infinite;
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(28px);
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 999px;
+  box-shadow: 0 28px 48px rgba(0, 93, 184, 0.12);
+  display: inline-flex;
+  gap: 0.7rem;
+  padding: 0.95rem 1.2rem;
+  position: absolute;
+}
+
+.loading-capsule--sending {
+  left: 4rem;
+  top: 11rem;
+}
+
+.loading-capsule--encrypting {
+  bottom: 10rem;
+  right: 3rem;
+}
+
+.loading-capsule--connected {
+  right: 10rem;
+  top: 20rem;
+}
+
+.loading-capsule__icon {
+  color: var(--color-primary);
+  font: 700 1rem/1 var(--font-display);
+}
+
+.loading-capsule__icon--spin {
+  animation: loading-spin 2s linear infinite;
+}
+
+@keyframes loading-float {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-10px) scale(1.02);
+  }
+}
+
+@keyframes loading-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 900px) {
+  .loading-capsule {
+    display: none;
+  }
+}

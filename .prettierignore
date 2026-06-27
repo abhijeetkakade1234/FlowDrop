@@ -1,0 +1,10 @@
+node_modules/
+frontend/node_modules/
+worker/node_modules/
+
+frontend/dist/
+worker/.wrangler/
+
+package-lock.json
+worker/worker-configuration.d.ts
+flowdrop_liquid_glass_interface/

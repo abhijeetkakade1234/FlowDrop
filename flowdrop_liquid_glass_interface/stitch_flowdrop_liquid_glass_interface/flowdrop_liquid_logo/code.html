@@ -1,0 +1,18 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="liquid" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#60A5FA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3B82F6;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  <path d="M50 15 C30 15, 15 30, 15 50 C15 75, 50 85, 50 85 C50 85, 85 75, 85 50 C85 30, 70 15, 50 15 Z" fill="url(#liquid)" filter="url(#glow)">
+    <animate attributeName="d" dur="5s" repeatCount="indefinite" values="M50 15 C30 15, 15 30, 15 50 C15 75, 50 85, 50 85 C50 85, 85 75, 85 50 C85 30, 70 15, 50 15 Z; M50 12 C32 12, 12 32, 12 50 C12 78, 50 88, 50 88 C50 88, 88 78, 88 50 C88 32, 68 12, 50 12 Z; M50 15 C30 15, 15 30, 15 50 C15 75, 50 85, 50 85 C50 85, 85 75, 85 50 C85 30, 70 15, 50 15 Z" />
+  </path>
+  <circle cx="50" cy="45" r="8" fill="white" opacity="0.3">
+    <animate attributeName="r" dur="3s" repeatCount="indefinite" values="8;10;8" />
+  </circle>
+</svg>

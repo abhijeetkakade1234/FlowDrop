@@ -1,0 +1,40 @@
+{
+  "name": "flowdrop",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "frontend",
+    "worker"
+  ],
+  "scripts": {
+    "prepare": "husky",
+    "dev:web": "npm --prefix frontend run dev",
+    "dev:worker": "npm --prefix worker run dev",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "check": "npm run lint && npm run build:web && npm run check:worker",
+    "build:web": "npm --prefix frontend run build",
+    "check:worker": "npm --prefix worker run check",
+    "typegen": "npm --prefix worker run typegen"
+  },
+  "lint-staged": {
+    "*.{js,mjs,cjs,ts,tsx,json,md,yml,yaml}": [
+      "prettier --write"
+    ],
+    "*.{ts,tsx,js,mjs,cjs}": [
+      "eslint --max-warnings=0 --no-warn-ignored"
+    ]
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.5.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.7.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.8.4",
+    "typescript-eslint": "^8.62.0"
+  }
+}

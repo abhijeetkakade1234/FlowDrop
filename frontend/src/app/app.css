@@ -1,0 +1,8 @@
+@import "../shared/styles/theme.css";
+@import "../shared/ui/shared-ui.css";
+@import "../shared/ui/liquid/liquid.css";
+@import "../features/loading/loading.css";
+@import "../features/files/files.css";
+@import "../features/history/history.css";
+@import "../features/pairing/pairing.css";
+@import "../features/session/session.css";

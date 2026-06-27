@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #fcf8fb;
+  --color-surface: #fcf8fb;
+  --color-surface-low: #f6f3f5;
+  --color-surface-container: #f0edef;
+  --color-text: #1b1b1d;
+  --color-text-muted: #6f7683;
+  --color-primary: #005db8;
+  --color-primary-bright: #4c95ff;
+  --color-primary-soft: #d6e3ff;
+  --color-success: #12b981;
+  --color-danger: #ba1a1a;
+}
+
+:root {
+  --font-display: "Hanken Grotesk", "Segoe UI", sans-serif;
+  --font-body: "Inter", "Segoe UI", sans-serif;
+  --type-display: 600 3rem/1.05 var(--font-display);
+  --type-headline: 600 2rem/1.15 var(--font-display);
+  --type-body-md: 400 1.0625rem/1.5 var(--font-body);
+  --type-body-sm: 400 0.875rem/1.45 var(--font-body);
+  --type-label: 600 0.75rem/1 var(--font-body);
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}

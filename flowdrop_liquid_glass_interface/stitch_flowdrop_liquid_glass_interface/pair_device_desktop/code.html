@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FlowDrop | Connect Device</title>
+<!-- Google Fonts: Inter and Hanken Grotesk -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Hanken+Grotesk:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-surface-variant": "#414753",
+                    "outline-variant": "#c1c6d5",
+                    "inverse-on-surface": "#f3f0f2",
+                    "background": "#fcf8fb",
+                    "on-secondary": "#ffffff",
+                    "on-tertiary-fixed-variant": "#454747",
+                    "on-background": "#1b1b1d",
+                    "inverse-primary": "#aac7ff",
+                    "on-primary-fixed": "#001b3e",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed": "#d6e3ff",
+                    "secondary-fixed-dim": "#a8c8ff",
+                    "error-container": "#ffdad6",
+                    "on-secondary-container": "#305182",
+                    "primary": "#005db8",
+                    "on-primary": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "outline": "#727784",
+                    "surface-container-high": "#eae7ea",
+                    "surface-container-highest": "#e4e2e4",
+                    "on-error": "#ffffff",
+                    "on-secondary-fixed-variant": "#254777",
+                    "on-tertiary-container": "#2d2f2f",
+                    "tertiary-container": "#959696",
+                    "on-primary-container": "#002d60",
+                    "secondary": "#3f5f91",
+                    "surface-variant": "#e4e2e4",
+                    "surface-tint": "#005db8",
+                    "on-tertiary-fixed": "#1a1c1c",
+                    "on-primary-fixed-variant": "#00458d",
+                    "primary-fixed-dim": "#aac7ff",
+                    "surface": "#fcf8fb",
+                    "on-surface": "#1b1b1d",
+                    "on-secondary-fixed": "#001b3c",
+                    "on-error-container": "#93000a",
+                    "secondary-container": "#a5c5fd",
+                    "inverse-surface": "#303032",
+                    "surface-dim": "#dcd9dc",
+                    "primary-container": "#4c95ff",
+                    "surface-container": "#f0edef",
+                    "tertiary-fixed": "#e2e2e2",
+                    "error": "#ba1a1a",
+                    "tertiary-fixed-dim": "#c6c6c7",
+                    "surface-container-low": "#f6f3f5",
+                    "surface-bright": "#fcf8fb",
+                    "tertiary": "#5d5f5f",
+                    "secondary-fixed": "#d6e3ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "16px",
+                    "container-padding": "24px",
+                    "safe-margin": "32px",
+                    "card-gap": "20px",
+                    "unit": "8px"
+            },
+            "fontFamily": {
+                    "label-caps": ["Inter"],
+                    "headline-lg-mobile": ["Hanken Grotesk"],
+                    "headline-lg": ["Hanken Grotesk"],
+                    "display-xl": ["Hanken Grotesk"],
+                    "body-md": ["Inter"],
+                    "body-sm": ["Inter"]
+            },
+            "fontSize": {
+                    "label-caps": ["12px", {"lineHeight": "1.0", "letterSpacing": "0.08em", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                    "display-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                    "body-md": ["17px", {"lineHeight": "1.5", "letterSpacing": "-0.01em", "fontWeight": "400"}],
+                    "body-sm": ["14px", {"lineHeight": "1.4", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #fcf8fb;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 0.5px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 40px 60px -20px rgba(0, 93, 184, 0.1);
+        }
+
+        .glass-inner {
+            background: rgba(255, 255, 255, 0.3);
+            border: 0.5px solid rgba(255, 255, 255, 0.4);
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.4);
+        }
+
+        .otp-box {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .otp-box:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(0, 93, 184, 0.15);
+        }
+
+        .liquid-button-primary {
+            background: linear-gradient(135deg, #4c95ff 0%, #005db8 100%);
+            box-shadow: 0 10px 20px -5px rgba(0, 93, 184, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        .liquid-button-primary:active {
+            transform: scale(0.95);
+        }
+
+        .frosted-button {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        .frosted-button:hover {
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        @keyframes pulse-red {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .dot-pulse {
+            animation: pulse-red 2s infinite ease-in-out;
+        }
+
+        /* Material Icon Adjustment */
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body class="flex flex-col font-body-md text-on-surface">
+<!-- TopAppBar Section (Injected from Shared Components) -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-container-padding py-4 bg-surface/40 backdrop-blur-xl border-b border-white/10 shadow-sm">
+<div class="flex items-center gap-2">
+<span class="font-headline-lg font-bold tracking-tight text-on-surface">FlowDrop</span>
+</div>
+<div class="hidden md:flex items-center gap-8">
+<a class="text-primary font-semibold font-label-caps transition-colors" href="#">Send</a>
+<a class="text-on-surface-variant/70 font-label-caps hover:bg-white/10 px-3 py-1 rounded-full transition-colors" href="#">Files</a>
+<a class="text-on-surface-variant/70 font-label-caps hover:bg-white/10 px-3 py-1 rounded-full transition-colors" href="#">History</a>
+<a class="text-on-surface-variant/70 font-label-caps hover:bg-white/10 px-3 py-1 rounded-full transition-colors" href="#">Settings</a>
+</div>
+<div class="flex items-center gap-3">
+<div class="hidden sm:flex items-center gap-2 px-3 py-1.5 glass-inner rounded-full">
+<span class="material-symbols-outlined text-[18px] text-primary">sensors</span>
+<span class="font-label-caps text-on-surface-variant text-[10px]">Connected</span>
+</div>
+<button class="p-2 rounded-full hover:bg-white/20 transition-colors">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Main Canvas Area -->
+<main class="relative flex-grow flex items-center justify-center min-h-screen p-container-padding">
+<!-- Animated Background Shader -->
+<!-- STITCH_SHADER_START:ANIMATION_4 class="absolute inset-0 w-full h-full -z-10" -->
+<div class="absolute inset-0 w-full h-full -z-10" style="display:block;">
+<canvas id="shader-canvas-ANIMATION_4" style="display:block;width:100%;height:100%"></canvas>
+<script>
+(function() {
+  const canvas = document.getElementById('shader-canvas-ANIMATION_4');
+
+  // Sync the WebGL drawing-buffer size with the CSS-driven layout size.
+  // This fires on initial layout and whenever the element is resized.
+  function syncSize() {
+    const w = canvas.clientWidth  || 1280;
+    const h = canvas.clientHeight || 720;
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width  = w;
+      canvas.height = h;
+    }
+  }
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(syncSize).observe(canvas);
+  }
+  syncSize();
+
+  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  if (!gl) return;
+  const vs = `attribute vec2 a_position;
+varying vec2 v_texCoord;
+void main() {
+  v_texCoord = a_position * 0.5 + 0.5;
+  gl_Position = vec4(a_position, 0.0, 1.0);
+}`;
+  const fs = `precision highp float;
+varying vec2 v_texCoord;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+void main() {
+    vec2 uv = v_texCoord;
+    
+    // Create soft flowing movement
+    float noise = sin(uv.x * 3.0 + u_time * 0.5) * cos(uv.y * 2.0 + u_time * 0.3);
+    noise += sin(uv.y * 4.0 - u_time * 0.4) * 0.5;
+    
+    // Background soft blue/white gradient
+    vec3 color1 = vec3(0.96, 0.98, 1.0); // Very light blue-white
+    vec3 color2 = vec3(0.85, 0.92, 1.0); // Soft sky blue
+    vec3 color3 = vec3(0.98, 0.96, 1.0); // Hint of soft lavender
+    
+    vec3 finalColor = mix(color1, color2, uv.y + noise * 0.1);
+    finalColor = mix(finalColor, color3, uv.x - noise * 0.1);
+    
+    // Add soft "shimmer" highlights
+    float shimmer = pow(max(0.0, sin(uv.x * 5.0 + uv.y * 2.0 + u_time)), 20.0) * 0.05;
+    finalColor += shimmer;
+
+    gl_FragColor = vec4(finalColor, 1.0);
+}`;
+  function cs(type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    return s;
+  }
+  const prog = gl.createProgram();
+  gl.attachShader(prog, cs(gl.VERTEX_SHADER, vs));
+  gl.attachShader(prog, cs(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+  const pos = gl.getAttribLocation(prog, 'a_position');
+  gl.enableVertexAttribArray(pos);
+  gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
+  const uTime = gl.getUniformLocation(prog, 'u_time');
+  const uRes = gl.getUniformLocation(prog, 'u_resolution');
+  const uMouse = gl.getUniformLocation(prog, 'u_mouse');
+
+  // u_mouse is in pixel coordinates matching u_resolution (ShaderToy convention).
+  // Shaders that need normalized coords should use: u_mouse / u_resolution.
+  let mouse = { x: canvas.width / 2, y: canvas.height / 2 };
+  window.addEventListener('mousemove', (event) => {
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width && rect.height) {
+      const nx = (event.clientX - rect.left) / rect.width;
+      const ny = 1.0 - (event.clientY - rect.top) / rect.height;
+      mouse.x = nx * canvas.width;
+      mouse.y = ny * canvas.height;
+    }
+  });
+
+  function render(t) {
+    if (typeof ResizeObserver === 'undefined') syncSize();
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    if (uTime) gl.uniform1f(uTime, t * 0.001);
+    if (uRes) gl.uniform2f(uRes, canvas.width, canvas.height);
+    if (uMouse) gl.uniform2f(uMouse, mouse.x, mouse.y);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    requestAnimationFrame(render);
+  }
+  render(0);
+})();
+</script>
+</div>
+<!-- STITCH_SHADER_END:ANIMATION_4 -->
+<!-- Main Pairing Card -->
+<div class="glass-panel w-full max-w-4xl rounded-xl md:rounded-lg p-8 md:p-12 flex flex-col md:grid md:grid-cols-2 gap-12 items-center">
+<!-- Left Column: Sending/Generating -->
+<div class="w-full flex flex-col items-center text-center space-y-8">
+<div class="space-y-2">
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Connect your device</h2>
+<p class="text-on-surface-variant opacity-70">Enter this code on your other device to start sharing.</p>
+</div>
+<!-- 6-Digit OTP -->
+<div class="flex gap-2 md:gap-4 justify-center">
+<div class="otp-box w-12 h-16 md:w-16 md:h-20 flex items-center justify-center rounded-lg shadow-sm">
+<span class="font-display-xl text-display-xl text-primary">4</span>
+</div>
+<div class="otp-box w-12 h-16 md:w-16 md:h-20 flex items-center justify-center rounded-lg shadow-sm">
+<span class="font-display-xl text-display-xl text-primary">8</span>
+</div>
+<div class="otp-box w-12 h-16 md:w-16 md:h-20 flex items-center justify-center rounded-lg shadow-sm">
+<span class="font-display-xl text-display-xl text-primary">3</span>
+</div>
+<div class="otp-box w-12 h-16 md:w-16 md:h-20 flex items-center justify-center rounded-lg shadow-sm">
+<span class="font-display-xl text-display-xl text-primary">9</span>
+</div>
+<div class="otp-box w-12 h-16 md:w-16 md:h-20 flex items-center justify-center rounded-lg shadow-sm">
+<span class="font-display-xl text-display-xl text-primary">2</span>
+</div>
+<div class="otp-box w-12 h-16 md:w-16 md:h-20 flex items-center justify-center rounded-lg shadow-sm">
+<span class="font-display-xl text-display-xl text-primary">1</span>
+</div>
+</div>
+<!-- Timer Section -->
+<div class="flex flex-col items-center gap-4">
+<div class="flex items-center gap-2 px-4 py-2 glass-inner rounded-full">
+<span class="w-2 h-2 rounded-full bg-error dot-pulse"></span>
+<span class="font-label-caps text-on-surface-variant">Expires in <span class="font-bold text-on-surface" id="timer">04:59</span></span>
+</div>
+<button class="frosted-button px-6 py-3 rounded-full flex items-center gap-2 group">
+<span class="material-symbols-outlined group-hover:rotate-180 transition-transform duration-500">refresh</span>
+<span class="font-label-caps">Generate new code</span>
+</button>
+</div>
+</div>
+<!-- Divider (Mobile only) -->
+<div class="md:hidden w-full h-[1px] bg-white/10"></div>
+<!-- Divider (Desktop only) -->
+<div class="hidden md:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[1px] h-3/4 bg-white/10"></div>
+<!-- Right Column: Receiving/Input -->
+<div class="w-full flex flex-col items-center text-center space-y-8">
+<div class="space-y-2">
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Enter pairing code</h2>
+<p class="text-on-surface-variant opacity-70">Already have a code? Input it below to connect instantly.</p>
+</div>
+<div class="w-full space-y-6">
+<div class="flex gap-2 justify-center">
+<input class="otp-box w-12 h-14 md:w-14 md:h-16 text-center text-2xl font-bold rounded-lg focus:ring-2 focus:ring-primary/40 focus:border-primary border-none text-on-surface bg-white/40" maxlength="1" type="text"/>
+<input class="otp-box w-12 h-14 md:w-14 md:h-16 text-center text-2xl font-bold rounded-lg focus:ring-2 focus:ring-primary/40 focus:border-primary border-none text-on-surface bg-white/40" maxlength="1" type="text"/>
+<input class="otp-box w-12 h-14 md:w-14 md:h-16 text-center text-2xl font-bold rounded-lg focus:ring-2 focus:ring-primary/40 focus:border-primary border-none text-on-surface bg-white/40" maxlength="1" type="text"/>
+<span class="flex items-center font-bold text-on-surface-variant opacity-30 text-xl">-</span>
+<input class="otp-box w-12 h-14 md:w-14 md:h-16 text-center text-2xl font-bold rounded-lg focus:ring-2 focus:ring-primary/40 focus:border-primary border-none text-on-surface bg-white/40" maxlength="1" type="text"/>
+<input class="otp-box w-12 h-14 md:w-14 md:h-16 text-center text-2xl font-bold rounded-lg focus:ring-2 focus:ring-primary/40 focus:border-primary border-none text-on-surface bg-white/40" maxlength="1" type="text"/>
+<input class="otp-box w-12 h-14 md:w-14 md:h-16 text-center text-2xl font-bold rounded-lg focus:ring-2 focus:ring-primary/40 focus:border-primary border-none text-on-surface bg-white/40" maxlength="1" type="text"/>
+</div>
+<button class="liquid-button-primary w-full max-w-[280px] py-4 rounded-full text-on-primary font-bold tracking-wide active:scale-95 transition-transform flex items-center justify-center gap-2 group">
+<span>Connect</span>
+<span class="material-symbols-outlined text-[20px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+<p class="text-body-sm text-on-surface-variant/60">
+                        Secure 256-bit encrypted connection.
+                    </p>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar (Hidden on Web as per hierarchy) -->
+<nav class="md:hidden fixed bottom-8 left-1/2 -translate-x-1/2 w-fit flex items-center gap-card-gap px-gutter py-2 z-50 bg-surface-container/60 backdrop-blur-2xl border border-white/20 rounded-full shadow-[0_20px_50px_rgba(0,93,184,0.15)]">
+<button class="bg-primary-container/80 text-on-primary-container rounded-full p-3 scale-110 active:scale-90 transition-all">
+<span class="material-symbols-outlined">send</span>
+</button>
+<button class="text-on-surface-variant p-3 hover:scale-105 active:scale-90 transition-all">
+<span class="material-symbols-outlined">folder</span>
+</button>
+<button class="text-on-surface-variant p-3 hover:scale-105 active:scale-90 transition-all">
+<span class="material-symbols-outlined">history</span>
+</button>
+<button class="text-on-surface-variant p-3 hover:scale-105 active:scale-90 transition-all">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</nav>
+<script>
+        // Micro-interaction: Automatic focus shift for OTP inputs
+        const inputs = document.querySelectorAll('input[type="text"]');
+        inputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                if (e.target.value.length === 1 && index < inputs.length - 1) {
+                    inputs[index + 1].focus();
+                }
+            });
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && e.target.value === '' && index > 0) {
+                    inputs[index - 1].focus();
+                }
+            });
+        });
+
+        // Simple Countdown Timer simulation
+        let timeLeft = 299; // 4:59
+        const timerElement = document.getElementById('timer');
+        
+        setInterval(() => {
+            if(timeLeft <= 0) {
+                timeLeft = 299;
+            }
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerElement.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+            timeLeft--;
+        }, 1000);
+
+        // Hover Effect on whole glass panel following cursor (subtle)
+        const panel = document.querySelector('.glass-panel');
+        document.addEventListener('mousemove', (e) => {
+            const xAxis = (window.innerWidth / 2 - e.pageX) / 50;
+            const yAxis = (window.innerHeight / 2 - e.pageY) / 50;
+            panel.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
+        });
+    </script>
+</body></html>

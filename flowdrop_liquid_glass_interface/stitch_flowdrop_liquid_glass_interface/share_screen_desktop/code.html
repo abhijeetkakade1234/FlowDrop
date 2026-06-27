@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FlowDrop | Connected</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&amp;family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-surface-variant": "#414753",
+            "outline-variant": "#c1c6d5",
+            "inverse-on-surface": "#f3f0f2",
+            "background": "#fcf8fb",
+            "on-secondary": "#ffffff",
+            "on-tertiary-fixed-variant": "#454747",
+            "on-background": "#1b1b1d",
+            "inverse-primary": "#aac7ff",
+            "on-primary-fixed": "#001b3e",
+            "surface-container-lowest": "#ffffff",
+            "primary-fixed": "#d6e3ff",
+            "secondary-fixed-dim": "#a8c8ff",
+            "error-container": "#ffdad6",
+            "on-secondary-container": "#305182",
+            "primary": "#005db8",
+            "on-primary": "#ffffff",
+            "on-tertiary": "#ffffff",
+            "outline": "#727784",
+            "surface-container-high": "#eae7ea",
+            "surface-container-highest": "#e4e2e4",
+            "on-error": "#ffffff",
+            "on-secondary-fixed-variant": "#254777",
+            "on-tertiary-container": "#2d2f2f",
+            "tertiary-container": "#959696",
+            "on-primary-container": "#002d60",
+            "secondary": "#3f5f91",
+            "surface-variant": "#e4e2e4",
+            "surface-tint": "#005db8",
+            "on-tertiary-fixed": "#1a1c1c",
+            "on-primary-fixed-variant": "#00458d",
+            "primary-fixed-dim": "#aac7ff",
+            "surface": "#fcf8fb",
+            "on-surface": "#1b1b1d",
+            "on-secondary-fixed": "#001b3c",
+            "on-error-container": "#93000a",
+            "secondary-container": "#a5c5fd",
+            "inverse-surface": "#303032",
+            "surface-dim": "#dcd9dc",
+            "primary-container": "#4c95ff",
+            "surface-container": "#f0edef",
+            "tertiary-fixed": "#e2e2e2",
+            "error": "#ba1a1a",
+            "tertiary-fixed-dim": "#c6c6c7",
+            "surface-container-low": "#f6f3f5",
+            "surface-bright": "#fcf8fb",
+            "tertiary": "#5d5f5f",
+            "secondary-fixed": "#d6e3ff"
+          },
+          "borderRadius": {
+            "DEFAULT": "1rem",
+            "lg": "2rem",
+            "xl": "3rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "gutter": "16px",
+            "container-padding": "24px",
+            "safe-margin": "32px",
+            "card-gap": "20px",
+            "unit": "8px"
+          },
+          "fontFamily": {
+            "label-caps": ["Inter"],
+            "headline-lg": ["Hanken Grotesk"],
+            "display-xl": ["Hanken Grotesk"],
+            "body-md": ["Inter"],
+            "body-sm": ["Inter"]
+          },
+          "fontSize": {
+            "label-caps": ["12px", {"lineHeight": "1.0", "letterSpacing": "0.08em", "fontWeight": "600"}],
+            "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "0.01em", "fontWeight": "600"}],
+            "display-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "0.02em", "fontWeight": "600"}],
+            "body-md": ["17px", {"lineHeight": "1.5", "letterSpacing": "-0.01em", "fontWeight": "400"}],
+            "body-sm": ["14px", {"lineHeight": "1.4", "fontWeight": "400"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.4);
+      backdrop-filter: blur(24px);
+      border: 0.5px solid rgba(255, 255, 255, 0.5);
+      box-shadow: 0 40px 60px -15px rgba(0, 93, 184, 0.1);
+    }
+
+    .liquid-shadow {
+      filter: drop-shadow(0 20px 40px rgba(0, 93, 184, 0.15));
+    }
+
+    .blue-glass {
+      background: rgba(76, 149, 255, 0.85);
+      backdrop-filter: blur(12px);
+      border: 0.5px solid rgba(255, 255, 255, 0.3);
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.4);
+    }
+
+    .sheen {
+      position: relative;
+      overflow: hidden;
+    }
+    .sheen::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        45deg,
+        transparent 45%,
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 55%
+      );
+      transform: rotate(30deg);
+      animation: shine 6s infinite;
+    }
+
+    @keyframes shine {
+      0% { transform: translateX(-100%) rotate(30deg); }
+      20% { transform: translateX(100%) rotate(30deg); }
+      100% { transform: translateX(100%) rotate(30deg); }
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen selection:bg-primary/20">
+<!-- Background Shader Animation -->
+<div class="fixed inset-0 z-0 pointer-events-none">
+<!-- STITCH_SHADER_START:ANIMATION_4 class="absolute inset-0 w-full h-full opacity-60" -->
+<div class="absolute inset-0 w-full h-full opacity-60" style="display:block;">
+<canvas id="shader-canvas-ANIMATION_4" style="display:block;width:100%;height:100%"></canvas>
+<script>
+(function() {
+  const canvas = document.getElementById('shader-canvas-ANIMATION_4');
+
+  // Sync the WebGL drawing-buffer size with the CSS-driven layout size.
+  // This fires on initial layout and whenever the element is resized.
+  function syncSize() {
+    const w = canvas.clientWidth  || 1280;
+    const h = canvas.clientHeight || 720;
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width  = w;
+      canvas.height = h;
+    }
+  }
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(syncSize).observe(canvas);
+  }
+  syncSize();
+
+  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  if (!gl) return;
+  const vs = `attribute vec2 a_position;
+varying vec2 v_texCoord;
+void main() {
+  v_texCoord = a_position * 0.5 + 0.5;
+  gl_Position = vec4(a_position, 0.0, 1.0);
+}`;
+  const fs = `precision highp float;
+varying vec2 v_texCoord;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+void main() {
+    vec2 uv = v_texCoord;
+    
+    // Create soft flowing movement
+    float noise = sin(uv.x * 3.0 + u_time * 0.5) * cos(uv.y * 2.0 + u_time * 0.3);
+    noise += sin(uv.y * 4.0 - u_time * 0.4) * 0.5;
+    
+    // Background soft blue/white gradient
+    vec3 color1 = vec3(0.96, 0.98, 1.0); // Very light blue-white
+    vec3 color2 = vec3(0.85, 0.92, 1.0); // Soft sky blue
+    vec3 color3 = vec3(0.98, 0.96, 1.0); // Hint of soft lavender
+    
+    vec3 finalColor = mix(color1, color2, uv.y + noise * 0.1);
+    finalColor = mix(finalColor, color3, uv.x - noise * 0.1);
+    
+    // Add soft "shimmer" highlights
+    float shimmer = pow(max(0.0, sin(uv.x * 5.0 + uv.y * 2.0 + u_time)), 20.0) * 0.05;
+    finalColor += shimmer;
+
+    gl_FragColor = vec4(finalColor, 1.0);
+}`;
+  function cs(type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    return s;
+  }
+  const prog = gl.createProgram();
+  gl.attachShader(prog, cs(gl.VERTEX_SHADER, vs));
+  gl.attachShader(prog, cs(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+  const pos = gl.getAttribLocation(prog, 'a_position');
+  gl.enableVertexAttribArray(pos);
+  gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
+  const uTime = gl.getUniformLocation(prog, 'u_time');
+  const uRes = gl.getUniformLocation(prog, 'u_resolution');
+  const uMouse = gl.getUniformLocation(prog, 'u_mouse');
+
+  // u_mouse is in pixel coordinates matching u_resolution (ShaderToy convention).
+  // Shaders that need normalized coords should use: u_mouse / u_resolution.
+  let mouse = { x: canvas.width / 2, y: canvas.height / 2 };
+  window.addEventListener('mousemove', (event) => {
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width && rect.height) {
+      const nx = (event.clientX - rect.left) / rect.width;
+      const ny = 1.0 - (event.clientY - rect.top) / rect.height;
+      mouse.x = nx * canvas.width;
+      mouse.y = ny * canvas.height;
+    }
+  });
+
+  function render(t) {
+    if (typeof ResizeObserver === 'undefined') syncSize();
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    if (uTime) gl.uniform1f(uTime, t * 0.001);
+    if (uRes) gl.uniform2f(uRes, canvas.width, canvas.height);
+    if (uMouse) gl.uniform2f(uMouse, mouse.x, mouse.y);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    requestAnimationFrame(render);
+  }
+  render(0);
+})();
+</script>
+</div>
+<!-- STITCH_SHADER_END:ANIMATION_4 -->
+</div>
+<!-- Header Navigation -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-container-padding py-4 bg-surface/40 backdrop-blur-xl dark:bg-inverse-surface/40 border-b border-white/10 shadow-sm">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-[20px]" style="font-variation-settings: 'FILL' 1;">cloud_done</span>
+</div>
+<span class="font-headline-lg text-headline-lg font-bold tracking-tight text-on-surface">FlowDrop</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden md:flex items-center gap-8 font-label-caps text-label-caps">
+<a class="text-primary font-semibold hover:bg-white/10 transition-colors px-3 py-1.5 rounded-full" href="#">Send</a>
+<a class="text-on-surface-variant/70 hover:bg-white/10 transition-colors px-3 py-1.5 rounded-full" href="#">Files</a>
+<a class="text-on-surface-variant/70 hover:bg-white/10 transition-colors px-3 py-1.5 rounded-full" href="#">History</a>
+</div>
+<div class="flex items-center gap-2 px-4 py-2 bg-surface-container-low/60 rounded-full border border-white/20">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">sensors</span>
+<span class="font-label-caps text-label-caps text-primary">Connected</span>
+</div>
+</div>
+</header>
+<main class="relative z-10 pt-28 pb-32 px-gutter md:px-safe-margin max-w-6xl mx-auto flex flex-col h-screen">
+<!-- Connection Status Bar -->
+<div class="flex flex-col items-center mb-8">
+<div class="flex items-center gap-2 px-3 py-1 rounded-full bg-white/30 backdrop-blur-md border border-white/40 shadow-sm">
+<div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+<span class="text-sm font-medium text-on-surface-variant">Connected</span>
+<span class="text-sm text-on-surface-variant/60 ml-1">Auto deletes in 59:42</span>
+</div>
+</div>
+<!-- Message Stream -->
+<div class="flex-grow overflow-y-auto custom-scrollbar flex flex-col gap-6 px-2">
+<div class="flex justify-center">
+<span class="text-xs font-semibold text-on-surface-variant/40 font-label-caps uppercase tracking-widest">Today</span>
+</div>
+<!-- Text Bubble -->
+<div class="flex flex-col items-end gap-1 group">
+<div class="blue-glass text-white px-6 py-4 rounded-xl rounded-tr-none max-w-md transform transition-transform hover:scale-[1.02] active:scale-95 duration-200">
+<p class="font-body-md">Hey! Check out this design for the new spatial interface. Let me know what you think!</p>
+</div>
+<div class="flex items-center gap-1.5 px-2">
+<span class="text-[10px] text-on-surface-variant/50 font-medium">9:41 AM</span>
+<span class="material-symbols-outlined text-[14px] text-primary">done_all</span>
+</div>
+</div>
+<!-- Image Bubble -->
+<div class="flex flex-col items-end gap-1">
+<div class="glass-panel p-2 rounded-xl rounded-tr-none max-w-lg sheen transform transition-transform hover:scale-[1.02] active:scale-95 duration-200 cursor-pointer overflow-hidden">
+<img class="w-full h-64 object-cover rounded-lg" data-alt="A high-fidelity digital rendering of a serene mountain landscape reflected in a crystal-clear lake at dawn. The colors are soft blues and warm morning oranges. The aesthetic is clean, minimalist, and cinematic, perfectly suited for a premium tech brand interface. High-refraction volumetric light spills over the peaks." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAq7W98AbE7klpnI1s6O7KBWNqGFe3ZDlZlmVmeapPs8IW0D5GvWRJJfcqLIsI3Gy4Suvi9mAKeT_ae3k3_GhOnnHfgyCKw03H3rVjbnafxbd-QDD7ADiXLJdi9nC78kbKfesTXPB-f8oEjRXqzmKn9-_4PKbQLerYUGqrZeccw_WcZkYor4ENBgHdiZXUNUhpZd6rR3ahp7QTRbmKjGSXxgNjcL7IzX1yHc9SK3PmKf3zuYeL8BTdaOwVaIGlLWSaqgbkdgNE7odY"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
+</div>
+<div class="px-2">
+<span class="text-[10px] text-on-surface-variant/50 font-medium">9:41 AM</span>
+</div>
+</div>
+<!-- File Bubble -->
+<div class="flex flex-col items-end gap-1">
+<div class="glass-panel px-6 py-4 rounded-xl rounded-tr-none flex items-center gap-4 max-w-sm transform transition-transform hover:scale-[1.02] active:scale-95 duration-200 cursor-pointer group">
+<div class="w-12 h-12 bg-primary-container/20 rounded-lg flex items-center justify-center group-hover:bg-primary-container/40 transition-colors">
+<span class="material-symbols-outlined text-primary text-[28px]" style="font-variation-settings: 'FILL' 1;">description</span>
+</div>
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface leading-tight">Project_Final.pdf</span>
+<span class="text-xs text-on-surface-variant/60">2.4 MB</span>
+</div>
+<button class="ml-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">download</span>
+</button>
+</div>
+<div class="px-2">
+<span class="text-[10px] text-on-surface-variant/50 font-medium">9:43 AM</span>
+</div>
+</div>
+</div>
+<!-- Composer Section -->
+<div class="fixed bottom-12 left-1/2 -translate-x-1/2 w-full max-w-3xl px-gutter">
+<div class="glass-panel rounded-full p-2 flex items-center gap-2 shadow-[0_20px_50px_rgba(0,93,184,0.15)] border-white/30">
+<button class="w-12 h-12 rounded-full flex items-center justify-center text-on-surface-variant/70 hover:bg-white/20 hover:scale-105 active:scale-95 transition-all">
+<span class="material-symbols-outlined">add</span>
+</button>
+<div class="flex-grow px-2">
+<input class="w-full bg-transparent border-none focus:ring-0 text-on-surface placeholder:text-on-surface-variant/40 text-body-md" placeholder="Paste or type something..." type="text"/>
+</div>
+<button class="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white shadow-lg shadow-primary/20 hover:scale-105 active:scale-90 transition-all">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">send</span>
+</button>
+</div>
+<div class="flex justify-center mt-4">
+<div class="flex items-center gap-2 text-xs font-medium text-on-surface-variant/40 font-label-caps uppercase tracking-wider">
+<span class="material-symbols-outlined text-[14px]">shield</span>
+<span>End-to-end Encrypted</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Mobile Bottom Nav -->
+<nav class="md:hidden fixed bottom-8 left-1/2 -translate-x-1/2 w-fit flex items-center gap-card-gap px-gutter py-2 z-50 bg-surface-container/60 backdrop-blur-2xl border border-white/20 shadow-[0_20px_50px_rgba(0,93,184,0.15)] rounded-full">
+<button class="bg-primary-container/80 text-on-primary-container rounded-full p-3 scale-110 flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">send</span>
+</button>
+<button class="text-on-surface-variant p-3 flex items-center justify-center hover:scale-105 transition-transform">
+<span class="material-symbols-outlined">folder</span>
+</button>
+<button class="text-on-surface-variant p-3 flex items-center justify-center hover:scale-105 transition-transform">
+<span class="material-symbols-outlined">history</span>
+</button>
+<button class="text-on-surface-variant p-3 flex items-center justify-center hover:scale-105 transition-transform">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</nav>
+<script>
+    // Simple micro-interaction for the composer input focus
+    const input = document.querySelector('input');
+    const composer = input.closest('.glass-panel');
+
+    input.addEventListener('focus', () => {
+      composer.classList.add('ring-2', 'ring-primary/20', 'scale-[1.01]');
+      composer.style.background = 'rgba(255, 255, 255, 0.55)';
+    });
+
+    input.addEventListener('blur', () => {
+      composer.classList.remove('ring-2', 'ring-primary/20', 'scale-[1.01]');
+      composer.style.background = 'rgba(255, 255, 255, 0.4)';
+    });
+
+    // Hover effect for glass bubbles
+    document.querySelectorAll('.glass-panel').forEach(card => {
+      card.addEventListener('mouseenter', () => {
+        card.style.backdropFilter = 'blur(32px)';
+      });
+      card.addEventListener('mouseleave', () => {
+        card.style.backdropFilter = 'blur(24px)';
+      });
+    });
+  </script>
+</body></html>
