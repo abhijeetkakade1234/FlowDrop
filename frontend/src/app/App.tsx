@@ -176,6 +176,7 @@ export default function App() {
     null,
   );
   const [joinPending, setJoinPending] = useState(false);
+  const [refreshPending, setRefreshPending] = useState(false);
   const [resetPending, setResetPending] = useState(false);
   const socketRef = useRef<WebSocket | null>(null);
   const errorTimerRef = useRef<number | null>(null);
@@ -283,6 +284,37 @@ export default function App() {
     }
   }, []);
 
+  async function readSessionState(
+    nextSessionId: string,
+    nextAccessToken: string,
+  ) {
+    const response = await fetch(
+      `${API_BASE}/api/session/${nextSessionId}/state`,
+      {
+        headers: {
+          authorization: `Bearer ${nextAccessToken}`,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error("Could not restore session");
+    }
+
+    return (await response.json()) as ApiSessionState;
+  }
+
+  function applySessionState(payload: ApiSessionState) {
+    setMessages(payload.messages);
+    setDeviceCount(payload.connected ? 2 : 1);
+    setSessionExpiresAt(payload.sessionExpiresAt);
+    setStatusText(
+      payload.connected
+        ? "Both devices connected"
+        : "Waiting for second device",
+    );
+  }
+
   useEffect(() => {
     if (
       !sessionId ||
@@ -295,45 +327,30 @@ export default function App() {
     }
 
     let active = true;
-    const socketUrl = new URL(`${getWebSocketBaseUrl()}/api/ws/${sessionId}`);
+    const currentSessionId = sessionId;
+    const currentAccessToken = accessToken;
+    const socketUrl = new URL(
+      `${getWebSocketBaseUrl()}/api/ws/${currentSessionId}`,
+    );
     socketUrl.searchParams.set("deviceId", deviceId);
 
     async function connect() {
       setErrorText(null);
-      const response = await fetch(
-        `${API_BASE}/api/session/${sessionId}/state`,
-        {
-          headers: {
-            authorization: `Bearer ${accessToken}`,
-          },
-        },
+      const payload = await readSessionState(
+        currentSessionId,
+        currentAccessToken,
       );
-
-      if (!response.ok) {
-        throw new Error("Could not restore session");
-      }
-
-      const payload = (await response.json()) as ApiSessionState;
       if (!active) {
         return;
       }
 
-      setMessages(payload.messages);
-      setDeviceCount(payload.connected ? 2 : 1);
-      setSessionExpiresAt(payload.sessionExpiresAt);
-      setStatusText("Connecting...");
+      applySessionState(payload);
 
       const socket = new WebSocket(socketUrl, [
         FLOWDROP_SOCKET_PROTOCOL,
-        `auth.${accessToken}`,
+        `auth.${currentAccessToken}`,
       ]);
       socketRef.current = socket;
-
-      socket.addEventListener("open", () => {
-        if (active) {
-          setStatusText("Live");
-        }
-      });
 
       socket.addEventListener("message", (event) => {
         if (!active) {
@@ -444,6 +461,43 @@ export default function App() {
     );
   }, [accessToken, otp, otpExpiresAt, role, sessionExpiresAt, sessionId]);
 
+  useEffect(() => {
+    if (view !== "connected" || !sessionId || !accessToken) {
+      return;
+    }
+
+    let syncPending = false;
+    const currentSessionId = sessionId;
+    const currentAccessToken = accessToken;
+
+    async function syncIfVisible() {
+      if (document.visibilityState !== "visible" || syncPending) {
+        return;
+      }
+
+      syncPending = true;
+      try {
+        const payload = await readSessionState(
+          currentSessionId,
+          currentAccessToken,
+        );
+        applySessionState(payload);
+      } catch {
+        // ponytail: keep the stale-view fix cheap; explicit button still handles user recovery.
+      } finally {
+        syncPending = false;
+      }
+    }
+
+    document.addEventListener("visibilitychange", syncIfVisible);
+    window.addEventListener("focus", syncIfVisible);
+
+    return () => {
+      document.removeEventListener("visibilitychange", syncIfVisible);
+      window.removeEventListener("focus", syncIfVisible);
+    };
+  }, [accessToken, sessionId, view]);
+
   async function createSession() {
     if (createPending) {
       return;
@@ -529,6 +583,35 @@ export default function App() {
       setErrorText(friendlyError(error, "Could not join session"));
     } finally {
       setJoinPending(false);
+    }
+  }
+
+  async function refreshSession() {
+    if (refreshPending || !sessionId || !accessToken) {
+      return;
+    }
+
+    const currentSessionId = sessionId;
+    const currentAccessToken = accessToken;
+    setRefreshPending(true);
+    setErrorText(null);
+
+    try {
+      const payload = await readSessionState(
+        currentSessionId,
+        currentAccessToken,
+      );
+      applySessionState(payload);
+
+      if (!payload.connected) {
+        setErrorText(
+          "Still waiting for the other device to finish connecting.",
+        );
+      }
+    } catch (error: unknown) {
+      setErrorText(friendlyError(error, "Could not refresh this session."));
+    } finally {
+      setRefreshPending(false);
     }
   }
 
@@ -670,15 +753,18 @@ export default function App() {
           errorText={null}
           messages={messages}
           onDraftChange={setDraft}
+          onRefreshSession={refreshSession}
           onReset={resetSession}
           onSend={sendText}
           paired={deviceCount >= 2}
+          refreshPending={refreshPending}
           resetPending={resetPending}
           sessionExpiresAt={sessionExpiresAt}
           statusText={statusText}
         />
       ) : (
         <PairingFeature
+          backPending={pairingScreenMode === "share" && resetPending}
           createPending={createPending}
           errorText={null}
           joinPending={joinPending}
@@ -692,11 +778,13 @@ export default function App() {
             setPairingMode("landing");
           }}
           onCreateSession={createSession}
+          onRefreshSession={refreshSession}
           onJoinOtpChange={setJoinOtp}
           onJoinSession={joinSession}
           onSelectReceive={() => setPairingMode("receive")}
           otp={otp}
           otpExpiresAt={otpExpiresAt}
+          refreshPending={refreshPending}
           statusText={statusText}
         />
       )}

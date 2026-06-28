@@ -1,5 +1,5 @@
-const CACHE_NAME = "flowdrop-shell-v1";
-const APP_SHELL = ["/", "/manifest.webmanifest", "/favicon.svg"];
+const CACHE_NAME = "flowdrop-shell-v2";
+const APP_SHELL = ["/manifest.webmanifest", "/favicon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -34,13 +34,29 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) {
-        return cached;
-      }
+  if (request.mode === "navigate") {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const copy = response.clone();
+            void caches
+              .open(CACHE_NAME)
+              .then((cache) => cache.put(request, copy));
+          }
+          return response;
+        })
+        .catch(async () => {
+          const cached = await caches.match(request);
+          return cached ?? caches.match("/");
+        }),
+    );
+    return;
+  }
 
-      return fetch(request).then((response) => {
+  event.respondWith(
+    fetch(request)
+      .then((response) => {
         if (!response.ok) {
           return response;
         }
@@ -48,7 +64,14 @@ self.addEventListener("fetch", (event) => {
         const copy = response.clone();
         void caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
         return response;
-      });
-    }),
+      })
+      .catch(async () => {
+        const cached = await caches.match(request);
+        if (cached) {
+          return cached;
+        }
+
+        throw new Error("Network unavailable and no cached response found.");
+      }),
   );
 });

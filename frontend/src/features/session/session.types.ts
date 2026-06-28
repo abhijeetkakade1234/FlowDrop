@@ -67,9 +67,11 @@ export type SessionFeatureProps = {
   errorText: string | null;
   messages: Message[];
   onDraftChange: (value: string) => void;
+  onRefreshSession: () => void;
   onReset: () => void;
   onSend: () => void;
   paired: boolean;
+  refreshPending: boolean;
   resetPending: boolean;
   sessionExpiresAt: number | null;
   statusText: string;

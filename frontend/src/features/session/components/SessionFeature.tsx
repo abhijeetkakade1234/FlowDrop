@@ -74,16 +74,39 @@ function SendIcon() {
   );
 }
 
+function RefreshIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="pairing-feature__icon-svg pairing-feature__icon-svg--small"
+      viewBox="0 0 20 20"
+    >
+      <path
+        d="M15.4 7.2V3.9m0 3.3h-3.3m2.4-1.4A5.9 5.9 0 1 0 16 10"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+    </svg>
+  );
+}
+
 export function SessionFeature({
   deviceId,
   draft,
   errorText,
   messages,
   onDraftChange,
+  onRefreshSession,
   onReset,
   onSend,
+  paired,
+  refreshPending,
   resetPending,
   sessionExpiresAt,
+  statusText,
 }: SessionFeatureProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
@@ -215,6 +238,37 @@ export function SessionFeature({
 
           <div className="session-feature__day-label">
             Live &bull; {formatSessionTimeLeft(sessionExpiresAt)}
+          </div>
+
+          <div className="session-feature__status-rail">
+            <div
+              aria-label={statusText}
+              className="session-feature__status-chip"
+              role="status"
+              title={statusText}
+            >
+              <span
+                className={
+                  paired
+                    ? "status-pill__dot status-pill__dot--success"
+                    : "status-pill__dot"
+                }
+              />
+            </div>
+            <UiCircleButton
+              ariaLabel="Check connection"
+              className="session-feature__status-action"
+              disabled={refreshPending}
+              onClick={onRefreshSession}
+              size="md"
+              title="Check connection"
+            >
+              {refreshPending ? (
+                <span className="session-thread__spinner" aria-hidden="true" />
+              ) : (
+                <RefreshIcon />
+              )}
+            </UiCircleButton>
           </div>
 
           <div className="session-feature__stream">

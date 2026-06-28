@@ -118,17 +118,20 @@ function BackIcon() {
 }
 
 export function PairingFeature({
+  backPending,
   createPending,
   joinOtp,
   joinPending,
   mode,
   onBack,
   onCreateSession,
+  onRefreshSession,
   onJoinOtpChange,
   onJoinSession,
   onSelectReceive,
   otp,
   otpExpiresAt,
+  refreshPending,
   statusText,
 }: PairingFeatureProps) {
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
@@ -159,11 +162,18 @@ export function PairingFeature({
           <UiCircleButton
             ariaLabel="Back"
             className="pairing-feature__back"
+            disabled={backPending}
             onClick={onBack}
             size="md"
           >
-            <BackIcon />
-            <span className="pairing-feature__back-label">Back</span>
+            {backPending ? (
+              <span className="pairing-feature__spinner" aria-hidden="true" />
+            ) : (
+              <>
+                <BackIcon />
+                <span className="pairing-feature__back-label">Back</span>
+              </>
+            )}
           </UiCircleButton>
         </div>
       ) : null}
@@ -246,6 +256,22 @@ export function PairingFeature({
                     ? `Expires in ${formatTimeLeft(otpSecondsLeft)}`
                     : statusText}
                 </div>
+                <button
+                  className="ghost-pill"
+                  disabled={refreshPending}
+                  onClick={onRefreshSession}
+                  type="button"
+                >
+                  {refreshPending ? (
+                    <span
+                      className="pairing-feature__spinner pairing-feature__spinner--dark"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <RefreshIcon />
+                  )}
+                  Check connection
+                </button>
                 <button
                   className="ghost-pill"
                   disabled={createBusy}
