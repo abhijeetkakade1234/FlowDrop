@@ -30,11 +30,11 @@ Ship only this:
 ## Explicitly Out For Now
 
 - files
-- images
+- multiple images
 - videos
 - drag and drop
 - clipboard file paste
-- QR scanner
+- generic file sharing
 - presence for more than 2 devices
 - delivery receipts
 - search
@@ -78,3 +78,26 @@ Files make everything harder:
 - preview UX
 
 Text avoids all of that and proves the core loop first.
+
+## Phase 2: Single Image Share
+
+After text feels stable, the next feature is the smallest useful media path:
+
+1. In the connected session, the user taps the `+` icon
+2. A small share picker opens
+3. The user chooses an image from the device
+4. FlowDrop sends one image only
+5. The other device sees the image inline in the session
+
+Keep this version narrow:
+
+- one image at a time
+- no multi-select
+- no gallery view
+- no drag and drop
+- no image editing
+- no compression pipeline yet
+
+The point is not "full file sharing." The point is proving that the session UI can handle one real media payload without breaking the speed and simplicity of the text flow.
+
+Multiple images come later, after this one-image flow is stable.

@@ -138,8 +138,6 @@ Cron Trigger:
 - deletes expired messages
 - deletes expired sessions
 
-Phase 1 has no R2 cleanup because phase 1 has no file storage.
-
 ## Schema
 
 ### sessions
@@ -174,12 +172,19 @@ expires_at INTEGER NOT NULL
 
 ## What We Are Deferring
 
-Phase 2 can add:
+## Phase 2 Planned Extension
 
-- R2 object uploads
-- file metadata table
-- upload progress events
-- content-type allowlist
-- signed download flow
+After the text loop is stable, Phase 2 adds one small media path:
 
-That is a separate complexity wall. Skip it until text works.
+- the session `+` button opens a share picker
+- the user selects one image only
+- the sender sees a simple preview before send
+- the receiver sees the image inline in the session
+
+Keep that pass narrow:
+
+- one image at a time
+- no multi-image upload
+- no generic file sharing
+- no drag and drop
+- no compression pipeline

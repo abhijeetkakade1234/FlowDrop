@@ -50,17 +50,21 @@ Harden the MVP.
 - mobile polish
 - reduced motion pass
 - lightweight logging
-
-## Phase 3
-
-Only after text feels good:
-
-- file uploads
-- R2 metadata
-- object cleanup
+- single image share from the connected session
+- `+` action opens a small share picker
+- image preview before send
+- inline received image in the session
+- size cap for first pass
 - content-type allowlist
-- image preview
-- progress UI
+
+Skip for this Phase 2 image pass:
+
+- multi-image upload
+- generic file uploads
+- drag and drop
+- compression pipeline
+- gallery management
+- progress UI beyond a simple sending state
 
 ## Build Order
 

@@ -5,7 +5,6 @@
 - JSON over HTTP for setup flows
 - WebSocket for live events
 - small surface area
-- no file endpoints in phase 1
 
 ## `POST /api/session/create`
 
@@ -180,3 +179,23 @@ The Worker resolves the session Durable Object and hands off the upgrade there.
   }
 }
 ```
+
+## Phase 2 Planned Additions
+
+Single image only for the first media pass.
+
+Planned behavior:
+
+- the `+` action in session opens a share picker
+- the user selects one image
+- FlowDrop uploads that one image
+- the receiving device sees the image inline in the session
+
+Planned constraints:
+
+- one image at a time
+- size cap
+- image-only content-type allowlist
+- same 1-hour expiry model as the session
+
+Multiple images come later.
