@@ -11,9 +11,9 @@
     "build": "npm run build:web",
     "dev:web": "npm --prefix frontend run dev",
     "dev:worker": "npm --prefix worker run dev",
-    "lint": "eslint . --max-warnings=0",
-    "format": "prettier . --write",
-    "format:check": "prettier . --check",
+    "lint": "npx eslint . --max-warnings=0",
+    "format": "npx prettier . --write",
+    "format:check": "npx prettier . --check",
     "check": "npm run lint && npm run build:web && npm run check:worker",
     "build:web": "npm --prefix frontend run build",
     "check:worker": "npm --prefix worker run check",
@@ -21,10 +21,10 @@
   },
   "lint-staged": {
     "*.{js,mjs,cjs,ts,tsx,json,md,yml,yaml}": [
-      "prettier --write"
+      "npx prettier --write"
     ],
     "*.{ts,tsx,js,mjs,cjs}": [
-      "eslint --max-warnings=0 --no-warn-ignored"
+      "npx eslint --max-warnings=0 --no-warn-ignored"
     ]
   },
   "devDependencies": {
