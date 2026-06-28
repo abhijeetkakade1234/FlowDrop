@@ -151,6 +151,26 @@ function getWebSocketBaseUrl() {
   return base.replace(/^http/, "ws");
 }
 
+function parsePairingPayload(value: string) {
+  const trimmed = value.trim();
+
+  try {
+    const url = new URL(trimmed);
+    const otpFromUrl = url.searchParams
+      .get("otp")
+      ?.replace(/\D/g, "")
+      .slice(0, 6);
+    if (otpFromUrl && otpFromUrl.length === 6) {
+      return otpFromUrl;
+    }
+  } catch {
+    // ponytail: scanner can also return the raw 6-digit code, so URL parsing is optional.
+  }
+
+  const rawOtp = trimmed.replace(/\D/g, "").slice(0, 6);
+  return rawOtp.length === 6 ? rawOtp : null;
+}
+
 export default function App() {
   const [view, setView] = useState<ViewState>("idle");
   const [pairingMode, setPairingMode] = useState<
@@ -245,7 +265,7 @@ export default function App() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const scannedOtp = params.get("otp")?.replace(/\D/g, "").slice(0, 6) ?? "";
+    const scannedOtp = parsePairingPayload(params.get("otp") ?? "") ?? "";
     const mode = params.get("mode");
     const autoJoin = params.get("autojoin") === "1";
 
@@ -619,6 +639,18 @@ export default function App() {
     await joinSessionWithOtp(joinOtp);
   }
 
+  function handleScannedQrCode(value: string) {
+    const scannedOtp = parsePairingPayload(value);
+    if (!scannedOtp) {
+      setErrorText("That QR code is not a valid FlowDrop connection code.");
+      return;
+    }
+
+    setJoinOtp(formatOtp(scannedOtp));
+    setPairingMode("receive");
+    setDeepLinkOtp(scannedOtp);
+  }
+
   useEffect(() => {
     if (!deepLinkOtp || joinPending || view === "connected" || sessionId) {
       return;
@@ -830,6 +862,7 @@ export default function App() {
           onRefreshSession={refreshSession}
           onJoinOtpChange={setJoinOtp}
           onJoinSession={joinSession}
+          onScanQrCode={handleScannedQrCode}
           onSelectReceive={() => setPairingMode("receive")}
           otp={otp}
           otpExpiresAt={otpExpiresAt}

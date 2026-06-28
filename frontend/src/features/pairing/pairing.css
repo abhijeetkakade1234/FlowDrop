@@ -52,6 +52,12 @@
   max-width: none;
 }
 
+.pairing-feature__column--landing {
+  justify-content: center;
+  min-height: calc(100dvh - 4.25rem);
+  padding-bottom: 2.4rem;
+}
+
 .pairing-feature__surface {
   background: transparent;
   border: 0;
@@ -276,6 +282,43 @@
   width: 2.45rem;
 }
 
+.pairing-feature__scanner-frame {
+  align-items: center;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(17, 31, 56, 0.18)),
+    rgba(19, 32, 56, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 2rem;
+  display: flex;
+  height: 18rem;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  width: min(100%, 18rem);
+}
+
+.pairing-feature__scanner-video {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.pairing-feature__scanner-guide {
+  border: 2px solid rgba(255, 255, 255, 0.88);
+  border-radius: 1.6rem;
+  box-shadow: 0 0 0 999px rgba(255, 255, 255, 0.02);
+  height: 9.75rem;
+  position: absolute;
+  width: 9.75rem;
+}
+
+.pairing-feature__scanner-error {
+  color: #6f7c97;
+  font: 400 0.95rem/1.42 var(--font-body);
+  margin: 0;
+  max-width: 17rem;
+}
+
 .pairing-feature__actions {
   display: grid;
   gap: 1rem;
@@ -495,6 +538,11 @@
 
   .pairing-feature__column {
     gap: 0.3rem;
+  }
+
+  .pairing-feature__column--landing {
+    min-height: calc(100dvh - 3.7rem);
+    padding-bottom: 1.4rem;
   }
 
   .pairing-feature__surface {

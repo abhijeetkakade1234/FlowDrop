@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import jsQR from "jsqr";
 import { QRCodeSVG } from "qrcode.react";
 import { UiCircleButton } from "../../../shared/ui/primitives";
 import { FlowDropLogo } from "../../../shared/ui/liquid/FlowDropLogo";
@@ -118,6 +119,14 @@ function BackIcon() {
   );
 }
 
+type BarcodeDetectorLike = {
+  detect: (source: CanvasImageSource) => Promise<Array<{ rawValue?: string }>>;
+};
+
+type BarcodeDetectorCtor = {
+  new (options?: { formats?: string[] }): BarcodeDetectorLike;
+};
+
 export function PairingFeature({
   backPending,
   createPending,
@@ -129,6 +138,7 @@ export function PairingFeature({
   onRefreshSession,
   onJoinOtpChange,
   onJoinSession,
+  onScanQrCode,
   onSelectReceive,
   otp,
   otpExpiresAt,
@@ -138,6 +148,11 @@ export function PairingFeature({
 }: PairingFeatureProps) {
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
   const [showQrDialog, setShowQrDialog] = useState(false);
+  const [showScannerDialog, setShowScannerDialog] = useState(false);
+  const [scannerError, setScannerError] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const scannerStreamRef = useRef<MediaStream | null>(null);
+  const scannerFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!otpExpiresAt) {
@@ -162,7 +177,135 @@ export function PairingFeature({
     if (mode !== "share") {
       setShowQrDialog(false);
     }
+    if (mode !== "receive") {
+      setShowScannerDialog(false);
+    }
   }, [mode]);
+
+  useEffect(() => {
+    if (!showScannerDialog) {
+      if (scannerFrameRef.current) {
+        window.cancelAnimationFrame(scannerFrameRef.current);
+        scannerFrameRef.current = null;
+      }
+      scannerStreamRef.current?.getTracks().forEach((track) => track.stop());
+      scannerStreamRef.current = null;
+      setScannerError(null);
+      return;
+    }
+
+    let cancelled = false;
+    let detector: BarcodeDetectorLike | null = null;
+    let canvas: HTMLCanvasElement | null = null;
+    let context: CanvasRenderingContext2D | null = null;
+
+    async function startScanner() {
+      const Detector = (
+        window as Window & {
+          BarcodeDetector?: BarcodeDetectorCtor;
+        }
+      ).BarcodeDetector;
+
+      try {
+        detector = Detector ? new Detector({ formats: ["qr_code"] }) : null;
+        canvas = document.createElement("canvas");
+        context = canvas.getContext("2d", { willReadFrequently: true });
+
+        if (!navigator.mediaDevices?.getUserMedia || !canvas || !context) {
+          setScannerError(
+            "QR scanning is not supported here. Type the code instead.",
+          );
+          return;
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+        });
+
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
+        scannerStreamRef.current = stream;
+        const video = videoRef.current;
+        if (!video) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
+        video.srcObject = stream;
+        await video.play();
+
+        const scanFrame = async () => {
+          if (
+            cancelled ||
+            !videoRef.current ||
+            !detector ||
+            videoRef.current.readyState < HTMLMediaElement.HAVE_CURRENT_DATA
+          ) {
+            if (!cancelled) {
+              scannerFrameRef.current = window.requestAnimationFrame(scanFrame);
+            }
+            return;
+          }
+
+          try {
+            let scannedValue = "";
+
+            if (detector) {
+              const results = await detector.detect(videoRef.current);
+              scannedValue =
+                results.find((result) => result.rawValue)?.rawValue ?? "";
+            } else if (canvas && context) {
+              const width = videoRef.current.videoWidth;
+              const height = videoRef.current.videoHeight;
+
+              if (width && height) {
+                canvas.width = width;
+                canvas.height = height;
+                context.drawImage(videoRef.current, 0, 0, width, height);
+                const imageData = context.getImageData(0, 0, width, height);
+                scannedValue =
+                  jsQR(imageData.data, imageData.width, imageData.height)
+                    ?.data ?? "";
+              }
+            }
+
+            if (scannedValue) {
+              onScanQrCode(scannedValue);
+              setShowScannerDialog(false);
+              return;
+            }
+          } catch {
+            setScannerError("Could not scan that QR code yet. Try again.");
+            setShowScannerDialog(false);
+            return;
+          }
+
+          scannerFrameRef.current = window.requestAnimationFrame(scanFrame);
+        };
+
+        scannerFrameRef.current = window.requestAnimationFrame(scanFrame);
+      } catch {
+        setScannerError(
+          "Camera access failed. Allow camera access or type the code instead.",
+        );
+      }
+    }
+
+    void startScanner();
+
+    return () => {
+      cancelled = true;
+      if (scannerFrameRef.current) {
+        window.cancelAnimationFrame(scannerFrameRef.current);
+        scannerFrameRef.current = null;
+      }
+      scannerStreamRef.current?.getTracks().forEach((track) => track.stop());
+      scannerStreamRef.current = null;
+    };
+  }, [onScanQrCode, showScannerDialog]);
 
   return (
     <section className="pairing-feature">
@@ -189,7 +332,7 @@ export function PairingFeature({
 
       <div className="pairing-feature__panel">
         {mode === "landing" ? (
-          <div className="pairing-feature__column pairing-feature__column--single">
+          <div className="pairing-feature__column pairing-feature__column--single pairing-feature__column--landing">
             <div className="pairing-feature__surface pairing-feature__surface--hero">
               <div className="pairing-feature__hero-logo">
                 <FlowDropLogo />
@@ -364,6 +507,18 @@ export function PairingFeature({
             <div className="pairing-feature__surface pairing-feature__surface--secondary-action">
               <button
                 className="pairing-feature__liquid-button pairing-feature__liquid-button--secondary"
+                onClick={() => setShowScannerDialog(true)}
+                type="button"
+              >
+                <span className="pairing-feature__button-glow pairing-feature__button-glow--soft" />
+                <ReceiveIcon />
+                Scan QR code
+              </button>
+            </div>
+
+            <div className="pairing-feature__surface pairing-feature__surface--secondary-action">
+              <button
+                className="pairing-feature__liquid-button pairing-feature__liquid-button--secondary"
                 disabled={createBusy}
                 onClick={onCreateSession}
                 type="button"
@@ -423,6 +578,47 @@ export function PairingFeature({
                 value={qrJoinUrl}
               />
             </div>
+          </div>
+        </div>
+      ) : null}
+
+      {showScannerDialog ? (
+        <div
+          className="app-modal-backdrop"
+          onClick={() => setShowScannerDialog(false)}
+          role="presentation"
+        >
+          <div
+            aria-modal="true"
+            className="pairing-feature__qr-dialog glass-window"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+          >
+            <button
+              aria-label="Close QR scanner"
+              className="pairing-feature__qr-dialog-close"
+              onClick={() => setShowScannerDialog(false)}
+              type="button"
+            >
+              <BackIcon />
+            </button>
+            <div className="pairing-feature__qr-copy">
+              <span className="section-kicker">Scan QR code</span>
+              <p>Point your camera at the FlowDrop QR on the other device.</p>
+            </div>
+            <div className="pairing-feature__scanner-frame">
+              <video
+                autoPlay
+                className="pairing-feature__scanner-video"
+                muted
+                playsInline
+                ref={videoRef}
+              />
+              <div className="pairing-feature__scanner-guide" />
+            </div>
+            {scannerError ? (
+              <p className="pairing-feature__scanner-error">{scannerError}</p>
+            ) : null}
           </div>
         </div>
       ) : null}
