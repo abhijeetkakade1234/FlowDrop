@@ -22,6 +22,11 @@ CREATE TABLE IF NOT EXISTS messages (
   session_id TEXT NOT NULL,
   sender_device_id TEXT NOT NULL,
   content TEXT NOT NULL,
+  message_type TEXT NOT NULL DEFAULT 'text',
+  file_name TEXT,
+  mime_type TEXT,
+  size_bytes INTEGER,
+  storage_key TEXT,
   created_at INTEGER NOT NULL,
   expires_at INTEGER NOT NULL,
   FOREIGN KEY (session_id) REFERENCES sessions (id) ON DELETE CASCADE

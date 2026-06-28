@@ -1,9 +1,24 @@
-export type Message = {
+export type TextMessage = {
   id: string;
-  text: string;
   createdAt: number;
   senderDeviceId: string;
+  kind: "text";
+  text: string;
 };
+
+export type ImageMessage = {
+  id: string;
+  createdAt: number;
+  senderDeviceId: string;
+  kind: "image";
+  image: {
+    fileName: string;
+    mimeType: string;
+    sizeBytes: number;
+  };
+};
+
+export type Message = TextMessage | ImageMessage;
 
 export type ApiSessionCreate = {
   sessionId: string;
@@ -44,7 +59,11 @@ export type ServerEvent =
     }
   | {
       type: "TEXT_MESSAGE";
-      data: Message;
+      data: TextMessage;
+    }
+  | {
+      type: "IMAGE_MESSAGE";
+      data: ImageMessage;
     }
   | {
       type: "SESSION_CLOSED";
@@ -66,13 +85,25 @@ export type SessionFeatureProps = {
   draft: string;
   errorText: string | null;
   messages: Message[];
+  imageUrls: Record<string, string>;
   onDraftChange: (value: string) => void;
+  onDownloadImage: (message: ImageMessage) => void;
   onRefreshSession: () => void;
   onReset: () => void;
   onSend: () => void;
+  onSendImage: () => void;
+  onSelectImage: (file: File) => void;
+  onClearSelectedImage: () => void;
   paired: boolean;
   refreshPending: boolean;
   resetPending: boolean;
+  selectedImage: {
+    fileName: string;
+    mimeType: string;
+    previewUrl: string;
+    sizeBytes: number;
+  } | null;
+  sendingImage: boolean;
   sessionExpiresAt: number | null;
   statusText: string;
 };

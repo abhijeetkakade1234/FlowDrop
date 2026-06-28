@@ -2,7 +2,11 @@ import { Hono } from "hono";
 import type { Context } from "hono";
 import { PairingSession } from "./pairing-session";
 
-const app = new Hono<{ Bindings: Env }>();
+type WorkerEnv = Env & {
+  IMAGES: R2Bucket;
+};
+
+const app = new Hono<{ Bindings: WorkerEnv }>();
 const MAX_JOIN_ATTEMPTS = 8;
 const CREATE_RATE_LIMIT = {
   scope: "session_create",
@@ -14,6 +18,8 @@ const JOIN_RATE_LIMIT = {
   maxHits: 24,
   windowSeconds: 600,
 };
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 type SessionRecord = {
   id: string;
@@ -28,7 +34,18 @@ type SessionAccess = {
   role: "host" | "peer";
 };
 
-type AppContext = Context<{ Bindings: Env }>;
+type MessageRow = {
+  id: string;
+  sender_device_id: string;
+  content: string;
+  message_type: string | null;
+  file_name: string | null;
+  mime_type: string | null;
+  size_bytes: number | null;
+  created_at: number;
+};
+
+type AppContext = Context<{ Bindings: WorkerEnv }>;
 type JsonBody = Record<string, unknown>;
 
 class ApiError extends Error {
@@ -214,30 +231,20 @@ app.get("/api/session/:sessionId/state", async (c) => {
   const sessionId = session.id;
 
   const messages = await c.env.DB.prepare(
-    `SELECT id, sender_device_id, content, created_at
+    `SELECT id, sender_device_id, content, message_type, file_name, mime_type, size_bytes, created_at
      FROM messages
      WHERE session_id = ?
      ORDER BY created_at ASC
      LIMIT 100`,
   )
     .bind(sessionId)
-    .all<{
-      id: string;
-      sender_device_id: string;
-      content: string;
-      created_at: number;
-    }>();
+    .all<MessageRow>();
 
   return c.json({
     sessionId,
     connected: session.connected === 1,
     sessionExpiresAt: session.session_expires_at,
-    messages: messages.results.map((message) => ({
-      id: message.id,
-      senderDeviceId: message.sender_device_id,
-      text: message.content,
-      createdAt: message.created_at,
-    })),
+    messages: messages.results.map(mapMessageRow),
   });
 });
 
@@ -283,6 +290,154 @@ app.post("/api/message", async (c) => {
   });
 });
 
+app.post("/api/session/:sessionId/image", async (c) => {
+  const access = await authenticateSessionAccess(c);
+  if ("error" in access) {
+    return access.error;
+  }
+
+  const formData = await readFormData(c);
+  const senderDeviceId = asOptionalString(formData.get("senderDeviceId")) ?? "";
+  const image = formData.get("image");
+
+  if (!(image instanceof File)) {
+    throw new ApiError(400, "IMAGE_REQUIRED", "Pick an image before sending.");
+  }
+  if (!isAuthorizedDevice(access.session, access.role, senderDeviceId)) {
+    throw new ApiError(
+      403,
+      "DEVICE_MISMATCH",
+      "This device is not allowed to use that session.",
+    );
+  }
+  if (!access.session.connected) {
+    throw new ApiError(
+      409,
+      "SESSION_NOT_READY",
+      "The other device is not connected yet.",
+    );
+  }
+  if (!ALLOWED_IMAGE_TYPES.has(image.type)) {
+    throw new ApiError(
+      415,
+      "IMAGE_TYPE_INVALID",
+      "Only JPG, PNG, and WebP images work right now.",
+    );
+  }
+  if (!image.size || image.size > MAX_IMAGE_SIZE_BYTES) {
+    throw new ApiError(
+      413,
+      "IMAGE_TOO_LARGE",
+      "That image is over the 10 MB limit.",
+    );
+  }
+
+  await assertSessionMessageCapacity(c.env, access.session.id);
+
+  const createdAt = Math.floor(Date.now() / 1000);
+  const messageId = crypto.randomUUID();
+  const fileName = safeFileName(image.name, image.type);
+  const storageKey = `sessions/${access.session.id}/${messageId}${fileExtensionForMime(image.type)}`;
+
+  await c.env.IMAGES.put(storageKey, image.stream(), {
+    httpMetadata: {
+      contentType: image.type,
+    },
+  });
+
+  try {
+    await c.env.DB.prepare(
+      `INSERT INTO messages (
+         id, session_id, sender_device_id, content, message_type, file_name, mime_type, size_bytes, storage_key, created_at, expires_at
+       ) VALUES (?, ?, ?, '', 'image', ?, ?, ?, ?, ?, ?)`,
+    )
+      .bind(
+        messageId,
+        access.session.id,
+        senderDeviceId,
+        fileName,
+        image.type,
+        image.size,
+        storageKey,
+        createdAt,
+        access.session.session_expires_at,
+      )
+      .run();
+  } catch (error) {
+    await c.env.IMAGES.delete(storageKey);
+    throw error;
+  }
+
+  const message = {
+    id: messageId,
+    kind: "image" as const,
+    senderDeviceId,
+    createdAt,
+    image: {
+      fileName,
+      mimeType: image.type,
+      sizeBytes: image.size,
+    },
+  };
+
+  const stub = getPairingStub(c.env, access.session.id);
+  await stub.publishImageMessage(message);
+
+  return c.json({
+    success: true,
+    messageId,
+    createdAt,
+  });
+});
+
+app.get("/api/session/:sessionId/image/:messageId", async (c) => {
+  const access = await authenticateSessionAccess(c);
+  if ("error" in access) {
+    return access.error;
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const image = await c.env.DB.prepare(
+    `SELECT mime_type, file_name, storage_key
+     FROM messages
+     WHERE id = ? AND session_id = ? AND message_type = 'image' AND expires_at >= ?`,
+  )
+    .bind(c.req.param("messageId"), access.session.id, now)
+    .first<{
+      mime_type: string | null;
+      file_name: string | null;
+      storage_key: string | null;
+    }>();
+
+  if (!image?.storage_key || !image.mime_type) {
+    throw new ApiError(
+      404,
+      "IMAGE_NOT_FOUND",
+      "That image is no longer available.",
+    );
+  }
+
+  const object = await c.env.IMAGES.get(image.storage_key);
+  if (!object) {
+    throw new ApiError(
+      404,
+      "IMAGE_NOT_FOUND",
+      "That image is no longer available.",
+    );
+  }
+
+  return new Response(object.body, {
+    headers: {
+      "cache-control": "private, max-age=60",
+      "content-disposition": `inline; filename="${(image.file_name ?? "image").replace(/"/g, "")}"`,
+      "content-type": image.mime_type,
+      "access-control-allow-origin": c.env.APP_ORIGIN,
+      "access-control-allow-headers": "content-type, authorization",
+      "access-control-allow-methods": "GET,POST,OPTIONS",
+    },
+  });
+});
+
 app.post("/api/session/:sessionId/reset", async (c) => {
   const access = await authenticateSessionAccess(c);
   if ("error" in access) {
@@ -296,6 +451,7 @@ app.post("/api/session/:sessionId/reset", async (c) => {
       : (access.session.peer_device_id ?? ""),
   );
 
+  await deleteSessionImageObjects(c.env, access.session.id);
   await c.env.DB.prepare("DELETE FROM messages WHERE session_id = ?")
     .bind(access.session.id)
     .run();
@@ -337,10 +493,11 @@ export default {
   fetch: app.fetch,
   scheduled: async (
     _event: ScheduledEvent,
-    env: Env,
+    env: WorkerEnv,
     ctx: ExecutionContext,
   ) => {
     const now = Math.floor(Date.now() / 1000);
+    ctx.waitUntil(deleteExpiredImageObjects(env, now));
     ctx.waitUntil(
       env.DB.prepare("DELETE FROM messages WHERE expires_at <= ?")
         .bind(now)
@@ -388,7 +545,7 @@ async function hashHex(data: Uint8Array) {
     .join("");
 }
 
-function getPairingStub(env: Env, sessionId: string) {
+function getPairingStub(env: WorkerEnv, sessionId: string) {
   const id = env.PAIRING_SESSION.idFromName(sessionId);
   return env.PAIRING_SESSION.get(id);
 }
@@ -533,8 +690,113 @@ async function readJson(c: AppContext): Promise<JsonBody> {
   return body as JsonBody;
 }
 
+async function readFormData(c: AppContext) {
+  const formData = await c.req.formData().catch(() => null);
+  if (!formData) {
+    throw new ApiError(400, "FORM_INVALID", "Send a valid upload.");
+  }
+
+  return formData;
+}
+
 function asOptionalString(value: unknown) {
   return typeof value === "string" ? value : undefined;
+}
+
+function mapMessageRow(message: MessageRow) {
+  if (message.message_type === "image") {
+    return {
+      id: message.id,
+      kind: "image" as const,
+      senderDeviceId: message.sender_device_id,
+      createdAt: message.created_at,
+      image: {
+        fileName: message.file_name ?? "image",
+        mimeType: message.mime_type ?? "image/jpeg",
+        sizeBytes: Number(message.size_bytes ?? 0),
+      },
+    };
+  }
+
+  return {
+    id: message.id,
+    kind: "text" as const,
+    senderDeviceId: message.sender_device_id,
+    text: message.content,
+    createdAt: message.created_at,
+  };
+}
+
+async function assertSessionMessageCapacity(env: WorkerEnv, sessionId: string) {
+  const countRow = await env.DB.prepare(
+    `SELECT COUNT(*) AS total
+     FROM messages
+     WHERE session_id = ?`,
+  )
+    .bind(sessionId)
+    .first<{ total: number | string }>();
+  const total = Number(countRow?.total ?? 0);
+  if (total >= 500) {
+    throw new ApiError(
+      429,
+      "SESSION_MESSAGE_LIMIT_REACHED",
+      "This temporary session is full. Start a fresh session to keep sharing.",
+    );
+  }
+}
+
+function fileExtensionForMime(mimeType: string) {
+  switch (mimeType) {
+    case "image/png":
+      return ".png";
+    case "image/webp":
+      return ".webp";
+    default:
+      return ".jpg";
+  }
+}
+
+function safeFileName(fileName: string, mimeType: string) {
+  const cleaned = fileName.trim().replace(/[^\w.\-() ]+/g, "_");
+  if (cleaned) {
+    return cleaned;
+  }
+
+  return `image${fileExtensionForMime(mimeType)}`;
+}
+
+async function deleteSessionImageObjects(env: WorkerEnv, sessionId: string) {
+  const rows = await env.DB.prepare(
+    `SELECT storage_key
+     FROM messages
+     WHERE session_id = ? AND message_type = 'image' AND storage_key IS NOT NULL`,
+  )
+    .bind(sessionId)
+    .all<{ storage_key: string | null }>();
+
+  const keys = rows.results
+    .map((row) => row.storage_key)
+    .filter((value): value is string => Boolean(value));
+  if (keys.length) {
+    await env.IMAGES.delete(keys);
+  }
+}
+
+async function deleteExpiredImageObjects(env: WorkerEnv, now: number) {
+  const rows = await env.DB.prepare(
+    `SELECT storage_key
+     FROM messages
+     WHERE message_type = 'image' AND storage_key IS NOT NULL AND expires_at <= ?`,
+  )
+    .bind(now)
+    .all<{ storage_key: string | null }>();
+
+  const keys = rows.results
+    .map((row) => row.storage_key)
+    .filter((value): value is string => Boolean(value));
+  if (keys.length) {
+    await env.IMAGES.delete(keys);
+  }
 }
 
 function clientKey(c: AppContext, deviceId: string | null) {

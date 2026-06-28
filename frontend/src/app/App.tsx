@@ -6,6 +6,7 @@ import type {
   ApiSessionCreate,
   ApiSessionJoin,
   ApiSessionState,
+  ImageMessage,
   Message,
   ServerEvent,
 } from "../features/session/session.types";
@@ -30,6 +31,16 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 const FLOWDROP_SOCKET_PROTOCOL = "flowdrop";
 const SESSION_STORAGE_KEY = "flowdrop.session";
 const DEVICE_ID_STORAGE_KEY = "flowdrop.deviceId";
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+type SelectedImage = {
+  file: File;
+  fileName: string;
+  mimeType: string;
+  previewUrl: string;
+  sizeBytes: number;
+};
 
 function getDeviceId() {
   const existing = window.sessionStorage.getItem(DEVICE_ID_STORAGE_KEY);
@@ -88,6 +99,18 @@ function friendlyErrorMessage(
       return "This chat is full. Start a new session to keep sharing.";
     case "MESSAGE_PERSIST_FAILED":
       return "Your message could not be sent. Try again.";
+    case "IMAGE_REQUIRED":
+      return "Pick an image before sending.";
+    case "IMAGE_TYPE_INVALID":
+      return "Only JPG, PNG, and WebP images work right now.";
+    case "IMAGE_TOO_LARGE":
+      return "That image is over the 10 MB limit.";
+    case "IMAGE_UPLOAD_FAILED":
+      return "That image could not be sent. Try again.";
+    case "IMAGE_NOT_FOUND":
+      return "That image is no longer available.";
+    case "FORM_INVALID":
+      return "That upload did not come through. Pick the image again.";
     case "SESSION_NOT_READY":
       return "The connection is still getting ready. Try again in a moment.";
     case "BAD_EVENT":
@@ -171,6 +194,30 @@ function parsePairingPayload(value: string) {
   return rawOtp.length === 6 ? rawOtp : null;
 }
 
+async function fetchSessionImageBlob(
+  sessionId: string,
+  accessToken: string,
+  messageId: string,
+) {
+  const response = await fetch(
+    `${API_BASE}/api/session/${sessionId}/image/${messageId}`,
+    {
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    const payload = (await response
+      .json()
+      .catch(() => ({}))) as ApiErrorPayload;
+    throw new Error(apiErrorMessage(payload, "Could not load that image."));
+  }
+
+  return response.blob();
+}
+
 export default function App() {
   const [view, setView] = useState<ViewState>("idle");
   const [pairingMode, setPairingMode] = useState<
@@ -199,11 +246,18 @@ export default function App() {
   const [deepLinkOtp, setDeepLinkOtp] = useState<string | null>(null);
   const [refreshPending, setRefreshPending] = useState(false);
   const [resetPending, setResetPending] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<SelectedImage | null>(
+    null,
+  );
+  const [sendingImage, setSendingImage] = useState(false);
+  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
   const socketRef = useRef<WebSocket | null>(null);
   const errorTimerRef = useRef<number | null>(null);
   const closingSessionRef = useRef(false);
+  const imageLoadsRef = useRef(new Set<string>());
   const deviceId = useMemo(() => getDeviceId(), []);
 
+  // ponytail: reconnect effect is keyed to session identity, not helper function identity.
   useEffect(() => {
     function isStandalone() {
       return (
@@ -423,6 +477,17 @@ export default function App() {
           return;
         }
 
+        if (payload.type === "IMAGE_MESSAGE") {
+          setMessages((current) => {
+            if (current.some((message) => message.id === payload.data.id)) {
+              return current;
+            }
+
+            return [...current, payload.data];
+          });
+          return;
+        }
+
         if (
           payload.type === "DEVICE_CONNECTED" ||
           payload.type === "DEVICE_LEFT"
@@ -486,6 +551,7 @@ export default function App() {
       socketRef.current?.close();
       socketRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken, deviceId, role, sessionExpiresAt, sessionId, view]);
 
   useEffect(() => {
@@ -506,6 +572,51 @@ export default function App() {
       }),
     );
   }, [accessToken, otp, otpExpiresAt, role, sessionExpiresAt, sessionId]);
+
+  useEffect(() => {
+    if (view !== "connected" || !sessionId || !accessToken) {
+      return;
+    }
+
+    let active = true;
+    for (const message of messages) {
+      if (message.kind !== "image") {
+        continue;
+      }
+      if (imageUrls[message.id] || imageLoadsRef.current.has(message.id)) {
+        continue;
+      }
+
+      imageLoadsRef.current.add(message.id);
+      void fetchSessionImageBlob(sessionId, accessToken, message.id)
+        .then((blob) => {
+          if (!active) {
+            return;
+          }
+
+          const objectUrl = URL.createObjectURL(blob);
+          setImageUrls((current) => {
+            if (current[message.id]) {
+              URL.revokeObjectURL(objectUrl);
+              return current;
+            }
+            return { ...current, [message.id]: objectUrl };
+          });
+        })
+        .catch(() => {
+          if (active) {
+            setErrorText("Could not load that image. Try tapping it again.");
+          }
+        })
+        .finally(() => {
+          imageLoadsRef.current.delete(message.id);
+        });
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [accessToken, imageUrls, messages, sessionId, view]);
 
   useEffect(() => {
     if (view !== "connected" || !sessionId || !accessToken) {
@@ -704,10 +815,121 @@ export default function App() {
     setDraft("");
   }
 
+  function clearSelectedImage() {
+    setSelectedImage((current) => {
+      if (current) {
+        URL.revokeObjectURL(current.previewUrl);
+      }
+      return null;
+    });
+  }
+
+  function handleSelectImage(file: File) {
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setErrorText("Only JPG, PNG, and WebP images work right now.");
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      setErrorText("That image is over the 10 MB limit.");
+      return;
+    }
+
+    setSelectedImage((current) => {
+      if (current) {
+        URL.revokeObjectURL(current.previewUrl);
+      }
+
+      return {
+        file,
+        fileName: file.name || "image",
+        mimeType: file.type,
+        previewUrl: URL.createObjectURL(file),
+        sizeBytes: file.size,
+      };
+    });
+  }
+
+  async function sendImage() {
+    if (
+      sendingImage ||
+      !selectedImage ||
+      !sessionId ||
+      !accessToken ||
+      deviceCount < 2
+    ) {
+      if (deviceCount < 2) {
+        setErrorText("Pair the second device before sending an image.");
+      }
+      return;
+    }
+
+    setSendingImage(true);
+    setErrorText(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("senderDeviceId", deviceId);
+      formData.append("image", selectedImage.file, selectedImage.fileName);
+
+      const response = await fetch(
+        `${API_BASE}/api/session/${sessionId}/image`,
+        {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${accessToken}`,
+          },
+          body: formData,
+        },
+      );
+      const payload = (await response
+        .json()
+        .catch(() => ({}))) as ApiErrorPayload;
+      if (!response.ok) {
+        throw new Error(apiErrorMessage(payload, "Could not send that image."));
+      }
+
+      clearSelectedImage();
+    } catch (error: unknown) {
+      setErrorText(friendlyError(error, "Could not send that image."));
+    } finally {
+      setSendingImage(false);
+    }
+  }
+
+  async function downloadImage(message: ImageMessage) {
+    if (!sessionId || !accessToken) {
+      return;
+    }
+
+    try {
+      const blob = await fetchSessionImageBlob(
+        sessionId,
+        accessToken,
+        message.id,
+      );
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = message.image.fileName;
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+    } catch (error: unknown) {
+      setErrorText(friendlyError(error, "Could not download that image."));
+    }
+  }
+
   function closeSessionLocally() {
     closingSessionRef.current = true;
     socketRef.current?.close();
     socketRef.current = null;
+    clearSelectedImage();
+    for (const objectUrl of Object.values(imageUrls)) {
+      URL.revokeObjectURL(objectUrl);
+    }
+    imageLoadsRef.current.clear();
     window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
     setView("idle");
     setPairingMode("landing");
@@ -716,6 +938,7 @@ export default function App() {
     setSessionId(null);
     setRole(null);
     setAccessToken(null);
+    setImageUrls({});
     setMessages([]);
     setDraft("");
     setStatusText("Ready");
@@ -832,14 +1055,30 @@ export default function App() {
           deviceId={deviceId}
           draft={draft}
           errorText={null}
+          imageUrls={imageUrls}
           messages={messages}
+          onClearSelectedImage={clearSelectedImage}
           onDraftChange={setDraft}
+          onDownloadImage={downloadImage}
           onRefreshSession={refreshSession}
           onReset={resetSession}
           onSend={sendText}
+          onSendImage={sendImage}
+          onSelectImage={handleSelectImage}
           paired={deviceCount >= 2}
           refreshPending={refreshPending}
           resetPending={resetPending}
+          selectedImage={
+            selectedImage
+              ? {
+                  fileName: selectedImage.fileName,
+                  mimeType: selectedImage.mimeType,
+                  previewUrl: selectedImage.previewUrl,
+                  sizeBytes: selectedImage.sizeBytes,
+                }
+              : null
+          }
+          sendingImage={sendingImage}
           sessionExpiresAt={sessionExpiresAt}
           statusText={statusText}
         />

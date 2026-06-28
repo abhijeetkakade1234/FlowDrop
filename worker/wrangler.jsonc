@@ -18,6 +18,12 @@
       "migrations_dir": "../database/migrations",
     },
   ],
+  "r2_buckets": [
+    {
+      "binding": "IMAGES",
+      "bucket_name": "flowdrop-images",
+    },
+  ],
   "durable_objects": {
     "bindings": [
       {

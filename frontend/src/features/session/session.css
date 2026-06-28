@@ -196,6 +196,11 @@
   display: block;
 }
 
+.message-pill__content--image {
+  display: grid;
+  gap: 0.55rem;
+}
+
 .message-pill p {
   flex: 1;
   font: 400 1rem/1.45 var(--font-body);
@@ -203,6 +208,64 @@
   user-select: text;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.message-pill__image {
+  border-radius: 1rem;
+  display: block;
+  max-height: 20rem;
+  object-fit: cover;
+  width: min(100%, 18rem);
+}
+
+.message-pill__image-button {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+}
+
+.message-pill__image-placeholder {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 1rem;
+  color: rgba(65, 71, 83, 0.72);
+  display: flex;
+  font: 500 0.9rem/1.3 var(--font-body);
+  justify-content: center;
+  min-height: 10rem;
+  min-width: 12rem;
+  padding: 1rem;
+}
+
+.message-pill__image-actions {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.message-pill__image-actions button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  font: 600 0.78rem/1 var(--font-body);
+  gap: 0.3rem;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.message-pill__download-icon {
+  height: 0.9rem;
+  width: 0.9rem;
+}
+
+.message-pill__image-actions span {
+  font: 500 0.72rem/1 var(--font-body);
+  opacity: 0.72;
 }
 
 .message-pill--mine {
@@ -258,6 +321,155 @@
   bottom: max(0.9rem, env(safe-area-inset-bottom));
   width: calc(100% - 1.8rem);
   z-index: 14;
+}
+
+.composer-shell__preview {
+  align-items: center;
+  border-radius: 1.35rem;
+  bottom: calc(max(0.9rem, env(safe-area-inset-bottom)) + 5.35rem);
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  left: 0.9rem;
+  padding: 0.85rem;
+  position: absolute;
+  width: calc(100% - 1.8rem);
+  z-index: 13;
+}
+
+.composer-shell__preview-image {
+  border-radius: 1rem;
+  display: block;
+  height: 4.5rem;
+  object-fit: cover;
+  width: 4.5rem;
+}
+
+.composer-shell__preview-copy {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.composer-shell__preview-copy strong,
+.composer-shell__preview-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.composer-shell__preview-copy strong {
+  color: #20314f;
+  font: 600 0.9rem/1.3 var(--font-body);
+}
+
+.composer-shell__preview-copy span {
+  color: rgba(65, 71, 83, 0.72);
+  font: 500 0.76rem/1.3 var(--font-body);
+}
+
+.composer-shell__preview-actions {
+  display: flex;
+  gap: 0.5rem;
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+}
+
+.composer-shell__file-input {
+  display: none;
+}
+
+.composer-sheet-backdrop {
+  background: rgba(240, 244, 255, 0.18);
+  inset: 0;
+  position: fixed;
+  z-index: 28;
+}
+
+.composer-sheet {
+  border-radius: 1.5rem 1.5rem 0 0;
+  bottom: 0;
+  display: grid;
+  gap: 0.75rem;
+  left: 0;
+  padding: 1rem;
+  position: absolute;
+  width: 100%;
+}
+
+.composer-sheet__action {
+  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(124, 149, 193, 0.16);
+  border-radius: 1.15rem;
+  color: #20314f;
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.9rem 1rem;
+  text-align: left;
+}
+
+.composer-sheet__action strong {
+  font: 600 0.95rem/1.2 var(--font-body);
+}
+
+.composer-sheet__action span {
+  color: rgba(65, 71, 83, 0.72);
+  font: 500 0.76rem/1.3 var(--font-body);
+}
+
+.composer-sheet__action--active {
+  cursor: pointer;
+}
+
+.composer-sheet__action--disabled {
+  opacity: 0.58;
+}
+
+.session-image-viewer {
+  align-items: center;
+  background: rgba(18, 35, 56, 0.88);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 1rem;
+  position: fixed;
+  z-index: 40;
+}
+
+.session-image-viewer__close {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  color: white;
+  cursor: pointer;
+  display: inline-flex;
+  height: 2.7rem;
+  justify-content: center;
+  padding: 0;
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  top: max(1rem, env(safe-area-inset-top));
+  width: 2.7rem;
+  z-index: 41;
+}
+
+.session-image-viewer__close-icon {
+  height: 1rem;
+  width: 1rem;
+}
+
+.session-image-viewer__frame {
+  max-height: 100%;
+  max-width: min(92vw, 48rem);
+}
+
+.session-image-viewer__image {
+  border-radius: 1.2rem;
+  display: block;
+  max-height: calc(100dvh - 3rem);
+  max-width: 100%;
+  object-fit: contain;
 }
 
 .composer-shell__plus,
@@ -351,6 +563,13 @@
 
   .composer-shell {
     bottom: max(0.75rem, env(safe-area-inset-bottom));
+    left: 0.75rem;
+    position: fixed;
+    width: calc(100% - 1.5rem);
+  }
+
+  .composer-shell__preview {
+    bottom: calc(max(0.75rem, env(safe-area-inset-bottom)) + 5.2rem);
     left: 0.75rem;
     position: fixed;
     width: calc(100% - 1.5rem);

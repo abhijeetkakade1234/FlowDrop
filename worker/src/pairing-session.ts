@@ -9,9 +9,21 @@ type Attachment = {
 
 type TextMessage = {
   id: string;
+  kind: "text";
   text: string;
   createdAt: number;
   senderDeviceId: string;
+};
+
+type ImageMessage = {
+  id: string;
+  createdAt: number;
+  senderDeviceId: string;
+  image: {
+    fileName: string;
+    mimeType: string;
+    sizeBytes: number;
+  };
 };
 
 type SubmitTextResult =
@@ -100,6 +112,7 @@ export class PairingSession extends DurableObject<Env> {
     const createdAt = Math.floor(Date.now() / 1000);
     const message = {
       id: crypto.randomUUID(),
+      kind: "text" as const,
       text: normalizedText,
       createdAt,
       senderDeviceId,
@@ -130,6 +143,16 @@ export class PairingSession extends DurableObject<Env> {
       ok: true,
       message,
     };
+  }
+
+  async publishImageMessage(message: ImageMessage): Promise<void> {
+    const createdAt = Math.floor(Date.now() / 1000);
+    await this.ctx.storage.put("lastActivityAt", createdAt);
+    await this.refreshAlarm();
+    this.broadcast({
+      type: "IMAGE_MESSAGE",
+      data: message,
+    });
   }
 
   async closeSession(initiatedByDeviceId: string): Promise<void> {

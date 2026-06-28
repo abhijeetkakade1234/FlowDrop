@@ -1,11 +1,11 @@
-import type { FormEvent, KeyboardEvent } from "react";
+import type { ChangeEvent, FormEvent, KeyboardEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import {
   UiCircleButton,
   UiModal,
   UiPillButton,
 } from "../../../shared/ui/primitives";
-import type { SessionFeatureProps } from "../session.types";
+import type { ImageMessage, SessionFeatureProps } from "../session.types";
 import {
   formatMessageTime,
   formatSessionTimeLeft,
@@ -93,26 +93,84 @@ function RefreshIcon() {
   );
 }
 
+function DownloadIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="message-pill__download-icon"
+      viewBox="0 0 20 20"
+    >
+      <path
+        d="M10 3.75v7.25m0 0 2.75-2.75M10 11l-2.75-2.75M4.75 13.75h10.5"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.7"
+      />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="session-image-viewer__close-icon"
+      viewBox="0 0 20 20"
+    >
+      <path
+        d="m5.5 5.5 9 9m0-9-9 9"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.9"
+      />
+    </svg>
+  );
+}
+
+function formatFileSize(sizeBytes: number) {
+  if (sizeBytes < 1024 * 1024) {
+    return `${Math.max(1, Math.round(sizeBytes / 1024))} KB`;
+  }
+
+  return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export function SessionFeature({
   deviceId,
   draft,
   errorText,
+  imageUrls,
   messages,
+  onClearSelectedImage,
   onDraftChange,
+  onDownloadImage,
   onRefreshSession,
   onReset,
   onSend,
+  onSendImage,
+  onSelectImage,
   paired,
   refreshPending,
   resetPending,
+  selectedImage,
+  sendingImage,
   sessionExpiresAt,
   statusText,
 }: SessionFeatureProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [showSharePicker, setShowSharePicker] = useState(false);
+  const [viewerImage, setViewerImage] = useState<{
+    fileName: string;
+    url: string;
+  } | null>(null);
   const [composerOffset, setComposerOffset] = useState(0);
   const [, setNow] = useState(() => Date.now());
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -167,13 +225,15 @@ export function SessionFeature({
   }, []);
 
   useEffect(() => {
-    if (!showLeaveConfirm) {
+    if (!showLeaveConfirm && !showSharePicker && !viewerImage) {
       return;
     }
 
     function handleWindowKeyDown(event: globalThis.KeyboardEvent) {
       if (event.key === "Escape") {
         setShowLeaveConfirm(false);
+        setShowSharePicker(false);
+        setViewerImage(null);
       }
     }
 
@@ -181,7 +241,7 @@ export function SessionFeature({
     return () => {
       window.removeEventListener("keydown", handleWindowKeyDown);
     };
-  }, [showLeaveConfirm]);
+  }, [showLeaveConfirm, showSharePicker, viewerImage]);
 
   function handleComposerKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === "Enter" && !event.shiftKey) {
@@ -211,6 +271,58 @@ export function SessionFeature({
   function handleLeaveConfirm() {
     setShowLeaveConfirm(false);
     onReset();
+  }
+
+  function handleShareImageClick() {
+    setShowSharePicker(false);
+    fileInputRef.current?.click();
+  }
+
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (file) {
+      onSelectImage(file);
+    }
+
+    event.target.value = "";
+  }
+
+  function renderImageMessage(message: ImageMessage) {
+    const imageUrl = imageUrls[message.id];
+
+    return (
+      <div className="message-pill__content message-pill__content--image">
+        {imageUrl ? (
+          <button
+            className="message-pill__image-button"
+            onClick={() =>
+              setViewerImage({
+                fileName: message.image.fileName,
+                url: imageUrl,
+              })
+            }
+            type="button"
+          >
+            <img
+              alt={message.image.fileName}
+              className="message-pill__image"
+              src={imageUrl}
+            />
+          </button>
+        ) : (
+          <div className="message-pill__image-placeholder">
+            Loading image...
+          </div>
+        )}
+        <div className="message-pill__image-actions">
+          <button onClick={() => onDownloadImage(message)} type="button">
+            <DownloadIcon />
+            <span>Download</span>
+          </button>
+          <span>{formatFileSize(message.image.sizeBytes)}</span>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -296,31 +408,67 @@ export function SessionFeature({
                           : "message-pill message-pill--peer"
                       }
                     >
-                      <div className="message-pill__content">
-                        <p>{message.text}</p>
-                      </div>
+                      {message.kind === "text" ? (
+                        <div className="message-pill__content">
+                          <p>{message.text}</p>
+                        </div>
+                      ) : (
+                        renderImageMessage(message)
+                      )}
                     </div>
 
                     <div className="message-card__meta">
                       <span>{formatMessageTime(message.createdAt)}</span>
-                      <UiCircleButton
-                        ariaLabel="Copy message"
-                        className="message-card__copy"
-                        onClick={() =>
-                          void handleCopy(message.id, message.text)
-                        }
-                        size="sm"
-                        title={copiedId === message.id ? "Copied" : "Copy"}
-                        variant="plain"
-                      >
-                        {copiedId === message.id ? "Copied" : <CopyIcon />}
-                      </UiCircleButton>
+                      {message.kind === "text" ? (
+                        <UiCircleButton
+                          ariaLabel="Copy message"
+                          className="message-card__copy"
+                          onClick={() =>
+                            void handleCopy(message.id, message.text)
+                          }
+                          size="sm"
+                          title={copiedId === message.id ? "Copied" : "Copy"}
+                          variant="plain"
+                        >
+                          {copiedId === message.id ? "Copied" : <CopyIcon />}
+                        </UiCircleButton>
+                      ) : null}
                     </div>
                   </article>
                 );
               })
             )}
           </div>
+
+          {selectedImage ? (
+            <div className="composer-shell__preview glass-window">
+              <img
+                alt={selectedImage.fileName}
+                className="composer-shell__preview-image"
+                src={selectedImage.previewUrl}
+              />
+              <div className="composer-shell__preview-copy">
+                <strong>{selectedImage.fileName}</strong>
+                <span>
+                  {selectedImage.mimeType.replace("image/", "").toUpperCase()} ·{" "}
+                  {formatFileSize(selectedImage.sizeBytes)}
+                </span>
+              </div>
+              <div className="composer-shell__preview-actions">
+                <UiPillButton onClick={onClearSelectedImage} size="sm">
+                  Cancel
+                </UiPillButton>
+                <UiPillButton
+                  disabled={!paired || sendingImage}
+                  onClick={onSendImage}
+                  size="sm"
+                  variant="primary"
+                >
+                  {sendingImage ? "Sending..." : "Send image"}
+                </UiPillButton>
+              </div>
+            </div>
+          ) : null}
 
           <form
             className="composer-shell"
@@ -337,11 +485,20 @@ export function SessionFeature({
             <UiCircleButton
               ariaLabel="More actions"
               className="composer-shell__plus"
+              onClick={() => setShowSharePicker(true)}
               size="md"
+              type="button"
               variant="plain"
             >
               +
             </UiCircleButton>
+            <input
+              accept="image/jpeg,image/png,image/webp"
+              className="composer-shell__file-input"
+              onChange={handleFileChange}
+              ref={fileInputRef}
+              type="file"
+            />
             <textarea
               className="composer-shell__input"
               ref={composerRef}
@@ -393,6 +550,65 @@ export function SessionFeature({
         >
           This will end the connection entirely on both devices.
         </UiModal>
+      ) : null}
+
+      {showSharePicker ? (
+        <div
+          className="composer-sheet-backdrop"
+          onClick={() => setShowSharePicker(false)}
+          role="presentation"
+        >
+          <div
+            className="composer-sheet glass-window"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+          >
+            <button
+              className="composer-sheet__action composer-sheet__action--active"
+              onClick={handleShareImageClick}
+              type="button"
+            >
+              <strong>Image</strong>
+              <span>Pick one JPG, PNG, or WebP</span>
+            </button>
+            <div className="composer-sheet__action composer-sheet__action--disabled">
+              <strong>Video</strong>
+              <span>Coming next</span>
+            </div>
+            <div className="composer-sheet__action composer-sheet__action--disabled">
+              <strong>Docs</strong>
+              <span>Coming next</span>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {viewerImage ? (
+        <div
+          className="session-image-viewer"
+          onClick={() => setViewerImage(null)}
+          role="presentation"
+        >
+          <button
+            aria-label="Close image preview"
+            className="session-image-viewer__close"
+            onClick={() => setViewerImage(null)}
+            type="button"
+          >
+            <CloseIcon />
+          </button>
+          <div
+            className="session-image-viewer__frame"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+          >
+            <img
+              alt={viewerImage.fileName}
+              className="session-image-viewer__image"
+              src={viewerImage.url}
+            />
+          </div>
+        </div>
       ) : null}
     </section>
   );
