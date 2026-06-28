@@ -5,6 +5,7 @@ export type PairingFeatureProps = {
   joinPending: boolean;
   joinOtp: string;
   mode: "landing" | "receive" | "share";
+  qrJoinUrl: string | null;
   refreshPending: boolean;
   onCreateSession: () => void;
   onBack: () => void;

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { UiCircleButton } from "../../../shared/ui/primitives";
 import { FlowDropLogo } from "../../../shared/ui/liquid/FlowDropLogo";
 import type { PairingFeatureProps } from "../pairing.types";
@@ -131,10 +132,12 @@ export function PairingFeature({
   onSelectReceive,
   otp,
   otpExpiresAt,
+  qrJoinUrl,
   refreshPending,
   statusText,
 }: PairingFeatureProps) {
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
+  const [showQrDialog, setShowQrDialog] = useState(false);
 
   useEffect(() => {
     if (!otpExpiresAt) {
@@ -154,6 +157,12 @@ export function PairingFeature({
   const otpSecondsLeft = otpExpiresAt ? otpExpiresAt - now : 0;
   const createBusy = createPending;
   const joinBusy = joinPending;
+
+  useEffect(() => {
+    if (mode !== "share") {
+      setShowQrDialog(false);
+    }
+  }, [mode]);
 
   return (
     <section className="pairing-feature">
@@ -247,6 +256,19 @@ export function PairingFeature({
                 ))}
               </div>
             </div>
+
+            {qrJoinUrl ? (
+              <div className="pairing-feature__surface pairing-feature__surface--qr">
+                <button
+                  className="pairing-feature__qr-trigger ghost-pill"
+                  onClick={() => setShowQrDialog(true)}
+                  type="button"
+                >
+                  <span className="section-kicker">Scan instead</span>
+                  <span>Show QR code</span>
+                </button>
+              </div>
+            ) : null}
 
             <div className="pairing-feature__surface pairing-feature__surface--meta">
               <div className="pairing-feature__meta">
@@ -365,6 +387,45 @@ export function PairingFeature({
           </div>
         )}
       </div>
+
+      {showQrDialog && qrJoinUrl ? (
+        <div
+          className="app-modal-backdrop"
+          onClick={() => setShowQrDialog(false)}
+          role="presentation"
+        >
+          <div
+            aria-modal="true"
+            className="pairing-feature__qr-dialog glass-window"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+          >
+            <button
+              aria-label="Close QR code"
+              className="pairing-feature__qr-dialog-close"
+              onClick={() => setShowQrDialog(false)}
+              type="button"
+            >
+              <BackIcon />
+            </button>
+            <div className="pairing-feature__qr-copy">
+              <span className="section-kicker">Scan instead</span>
+              <p>Scan on your other device to open FlowDrop and connect.</p>
+            </div>
+            <div className="pairing-feature__qr-code">
+              <QRCodeSVG
+                bgColor="transparent"
+                fgColor="#1f2a3d"
+                level="M"
+                marginSize={1}
+                size={168}
+                title="FlowDrop pairing QR code"
+                value={qrJoinUrl}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

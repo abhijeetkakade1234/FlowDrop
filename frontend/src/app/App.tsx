@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PairingFeature } from "../features/pairing/components/PairingFeature";
 import { SessionFeature } from "../features/session/components/SessionFeature";
 import { formatOtp } from "../features/pairing/pairing.utils";
@@ -176,6 +176,7 @@ export default function App() {
     null,
   );
   const [joinPending, setJoinPending] = useState(false);
+  const [deepLinkOtp, setDeepLinkOtp] = useState<string | null>(null);
   const [refreshPending, setRefreshPending] = useState(false);
   const [resetPending, setResetPending] = useState(false);
   const socketRef = useRef<WebSocket | null>(null);
@@ -241,6 +242,31 @@ export default function App() {
       }
     };
   }, [errorText]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const scannedOtp = params.get("otp")?.replace(/\D/g, "").slice(0, 6) ?? "";
+    const mode = params.get("mode");
+    const autoJoin = params.get("autojoin") === "1";
+
+    if (scannedOtp.length === 6) {
+      window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      setJoinOtp(formatOtp(scannedOtp));
+      setPairingMode(mode === "receive" ? "receive" : "receive");
+      if (autoJoin) {
+        setDeepLinkOtp(scannedOtp);
+      }
+    }
+
+    if (params.has("otp") || params.has("mode") || params.has("autojoin")) {
+      params.delete("otp");
+      params.delete("mode");
+      params.delete("autojoin");
+      const nextSearch = params.toString();
+      const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash}`;
+      window.history.replaceState({}, "", nextUrl);
+    }
+  }, []);
 
   useEffect(() => {
     const raw = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
@@ -541,50 +567,66 @@ export default function App() {
     }
   }
 
+  const joinSessionWithOtp = useCallback(
+    async (nextOtp: string) => {
+      if (joinPending) {
+        return;
+      }
+
+      setJoinPending(true);
+      setView("joining");
+      setErrorText(null);
+      setStatusText("Joining...");
+
+      try {
+        const response = await fetch(`${API_BASE}/api/session/join`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            otp: nextOtp.replace(/\D/g, ""),
+            deviceId,
+          }),
+        });
+
+        const payload = (await response.json()) as ApiSessionJoin &
+          ApiErrorPayload;
+        if (!response.ok || !("sessionId" in payload)) {
+          throw new Error(apiErrorMessage(payload, "Could not join session"));
+        }
+
+        setOtp("");
+        setOtpExpiresAt(null);
+        setSessionId(payload.sessionId);
+        setRole("peer");
+        setAccessToken(payload.accessToken);
+        setSessionExpiresAt(payload.sessionExpiresAt);
+        setView("connected");
+        setStatusText("Connecting...");
+      } catch (error: unknown) {
+        setView("idle");
+        setPairingMode("receive");
+        setErrorText(friendlyError(error, "Could not join session"));
+      } finally {
+        setJoinPending(false);
+      }
+    },
+    [deviceId, joinPending],
+  );
+
   async function joinSession() {
-    if (joinPending) {
+    await joinSessionWithOtp(joinOtp);
+  }
+
+  useEffect(() => {
+    if (!deepLinkOtp || joinPending || view === "connected" || sessionId) {
       return;
     }
 
-    setJoinPending(true);
-    setView("joining");
-    setErrorText(null);
-    setStatusText("Joining...");
-
-    try {
-      const response = await fetch(`${API_BASE}/api/session/join`, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          otp: joinOtp.replace(/\s/g, ""),
-          deviceId,
-        }),
-      });
-
-      const payload = (await response.json()) as ApiSessionJoin &
-        ApiErrorPayload;
-      if (!response.ok || !("sessionId" in payload)) {
-        throw new Error(apiErrorMessage(payload, "Could not join session"));
-      }
-
-      setOtp("");
-      setOtpExpiresAt(null);
-      setSessionId(payload.sessionId);
-      setRole("peer");
-      setAccessToken(payload.accessToken);
-      setSessionExpiresAt(payload.sessionExpiresAt);
-      setView("connected");
-      setStatusText("Connecting...");
-    } catch (error: unknown) {
-      setView("idle");
-      setPairingMode("receive");
-      setErrorText(friendlyError(error, "Could not join session"));
-    } finally {
-      setJoinPending(false);
-    }
-  }
+    setDeepLinkOtp(null);
+    void joinSessionWithOtp(deepLinkOtp);
+  }, [deepLinkOtp, joinPending, joinSessionWithOtp, sessionId, view]);
 
   async function refreshSession() {
     if (refreshPending || !sessionId || !accessToken) {
@@ -716,6 +758,13 @@ export default function App() {
       : pairingMode === "receive"
         ? "receive"
         : "landing";
+  const qrJoinUrl =
+    pairingScreenMode === "share" && otp
+      ? new URL(
+          `/?mode=receive&otp=${otp.replace(/\s/g, "")}&autojoin=1`,
+          window.location.origin,
+        ).toString()
+      : null;
   const showInstallChip =
     Boolean(installPrompt) &&
     !shouldShowSessionFeature &&
@@ -784,6 +833,7 @@ export default function App() {
           onSelectReceive={() => setPairingMode("receive")}
           otp={otp}
           otpExpiresAt={otpExpiresAt}
+          qrJoinUrl={qrJoinUrl}
           refreshPending={refreshPending}
           statusText={statusText}
         />
